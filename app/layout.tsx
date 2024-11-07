@@ -6,8 +6,8 @@ import Providers from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "SMTUC Realtime 🚌",
-    description: "Acompanhe todos os autocarros da SMTUC em tempo real!",
+    title: "CP Realtime 🚆",
+    description: "Acompanhe todos os comboios da CP em tempo real!",
 };
 
 export default function RootLayout({

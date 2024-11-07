@@ -27,8 +27,8 @@ export default function InfoDialog({
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>SMTUC Realtime</DialogTitle>
-                    <DialogDescription>Aplicação SMTUC.</DialogDescription>
+                    <DialogTitle>CP Realtime</DialogTitle>
+                    <DialogDescription>Aplicação CP.</DialogDescription>
                 </DialogHeader>
             </DialogContent>
         </Dialog>
