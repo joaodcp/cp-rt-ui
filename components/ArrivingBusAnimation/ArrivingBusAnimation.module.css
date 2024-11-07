@@ -1,0 +1,24 @@
+.scrollContainer {
+    width: 3ch;
+    height: 1em;
+    overflow: hidden;
+    position: relative;
+    font-family: monospace;
+    font-size: 20px;
+}
+
+.scrollContent {
+    display: flex;
+    position: absolute;
+    animation: scroll 0.7s linear infinite;
+    white-space: nowrap;
+}
+
+@keyframes scroll {
+    0% {
+        transform: translateX(-5ch);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}

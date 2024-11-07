@@ -1,0 +1,33 @@
+.bar {
+    position: relative;
+    width: 120px; /* Adjust the width of the loader */
+    height: 7px; /* Adjust the height of the loader */
+    background-color: rgb(30, 30, 30); /* Color of the loader bar */
+    border-radius: 5px; /* Half of the height to make it round */
+    overflow: hidden;
+}
+
+.capsule {
+    position: absolute;
+    height: 100%;
+    width: 30%;
+    border-radius: 5px; /* Half of the height to make it round */
+    background-color: rgb(
+        100,
+        100,
+        100
+    ); /* Color of the moving capsule */
+    animation: moveCapsule 1s linear infinite; /* Adjust animation duration and timing function */
+}
+
+@keyframes moveCapsule {
+    0% {
+        left: 0%;
+    }
+    50% {
+        left: 70%;
+    }
+    100% {
+        left: 0%;
+    }
+}

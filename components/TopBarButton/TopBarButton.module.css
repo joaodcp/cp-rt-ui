@@ -1,0 +1,18 @@
+.topBarButton {
+    border-radius: 8px;
+    padding: 5px;
+    margin: 20px;
+    top: 0;
+    transition: background 0.15s;
+    cursor: pointer;
+}
+
+@media (hover) {
+    .topBarButton:hover {
+        background: color-mix(
+            in srgb,
+            rgb(var(--foreground-rgb)) 10%,
+            transparent
+        );
+    }
+}

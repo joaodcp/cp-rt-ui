@@ -1,0 +1,7 @@
+.centered {
+    display: flex;
+    justify-content: center; /* Centering the loader horizontally */
+    align-items: center; /* Centering the loader vertically */
+    height: 100vh; /* Making the page take the full viewport height */
+    margin: 0; /* Removing default margin */
+}

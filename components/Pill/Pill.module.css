@@ -1,0 +1,51 @@
+.pill {
+    display: inline-block;
+    padding: 0 1rem 0 1rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    /* background-color: #3e3e3e;
+    color: #868686; */
+    font-size: 0.875rem;
+    font-weight: bolder;
+    line-height: 1.4;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.wrappingPill {
+    display: inline-block;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: bolder;
+    line-height: 1.4;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+#blue {
+    background-color: #017cb7;
+    color: #fff;
+}
+
+#gray {
+    background-color: #3e3e3e;
+    color: #868686;
+}
+
+#purple {
+    background-color: #a72784;
+    color: #fff;
+}
+
+#yellow {
+    background-color: #ffcd1e;
+    color: #000;
+}
+
+#subtlePurple {
+    background-color: rgba(167, 39, 132, 0.35);
+    color: #a72784;
+}
