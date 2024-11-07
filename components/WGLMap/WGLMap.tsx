@@ -40,7 +40,7 @@ export default function WGLMap({
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
                 cursor={cursor}
-                // onMove={evt => console.log(evt.viewState)}
+                onMove={(evt) => console.log(evt.viewState)}
                 mapStyle={
                     resolvedTheme == "light"
                         ? "https://api.maptiler.com/maps/aa0ea5c8-575e-43df-84dd-f8382eb72402/style.json?key=NvTfdJJxC0xa6dknGF48"

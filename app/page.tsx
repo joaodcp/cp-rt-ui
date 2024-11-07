@@ -711,9 +711,9 @@ export default function Home() {
             <WGLMap
                 id="map"
                 initialViewState={{
-                    latitude: 40.20331550919497,
-                    longitude: -8.410257373773128,
-                    zoom: 12,
+                    latitude: 39.514525450960036,
+                    longitude: -7.969213273122932,
+                    zoom: 6.4444226078908144,
                 }}
                 interactiveLayerIds={["vehicle", "stop"]}
                 onClick={handleLayerClick}
