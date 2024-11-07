@@ -93,17 +93,35 @@ enum VehicleStatus {
     Completed = "COMPLETED",
 }
 
-interface Vehicle {
-    trainNumber: number;
-    serviceCode: {
+interface Service {
+    code: string;
+    designation: string;
+}
+
+interface TrainStop {
+    station: {
         code: string;
         designation: string;
     };
+    arrival: string;
+    departure: string;
+    platform: string;
+    latitude: string;
+    longitude: string;
+    delay: number;
+    eta: string;
+    etd: string;
+}
+
+interface Vehicle {
+    trainNumber: number;
+    serviceCode: Service;
     delay: number;
     occupancy: null;
     latitude: number;
     longitude: number;
     status: VehicleStatus;
+    trainStops: TrainStop[];
 
     // calculated
     heading?: number;
@@ -320,7 +338,7 @@ export default function Home() {
 
     useEffect(() => {
         console.log(isLoading);
-        if (newVehicles) {
+        if (newVehicles?.vehicles) {
             isLoading && setIsLoading(false);
             const vehiclesWithHeading = newVehicles.vehicles.map((vehicle) => {
                 if (vehiclesRef.current) {
@@ -566,7 +584,16 @@ export default function Home() {
                 onStopSelected(stop);
             } else if (event?.features?.[0].properties.type === "vehicle") {
                 const vehicle = event?.features?.[0].properties as Vehicle;
-                onVehicleSelected(vehicle);
+                // idk why but nested objects are stringified in the event properties??
+                try {
+                    vehicle.serviceCode = JSON.parse(
+                        vehicle.serviceCode as unknown as string
+                    ) as Service;
+                    vehicle.trainStops = JSON.parse(
+                        vehicle.trainStops as unknown as string
+                    ) as TrainStop[];
+                    onVehicleSelected(vehicle);
+                } catch (e) {}
             }
         }
     };
@@ -584,28 +611,40 @@ export default function Home() {
         setSelectedVehicleInfo(null);
     };
 
-    const vehiclesLayerStyle: SymbolLayer = {
+    // const vehiclesLayerStyle: SymbolLayer = {
+    //     source: "vehicles",
+    //     id: "vehicle",
+    //     type: "symbol",
+    //     layout: {
+    //         "icon-image": "bus",
+    //         "icon-allow-overlap": true,
+    //         "icon-ignore-placement": true,
+    //         "icon-anchor": "center",
+    //         "symbol-placement": "point",
+    //         "icon-rotation-alignment": "map",
+    //         "icon-size": [
+    //             "interpolate",
+    //             ["linear"],
+    //             ["zoom"],
+    //             10,
+    //             0.1,
+    //             20,
+    //             0.4,
+    //         ],
+    //         "icon-offset": [0, 0],
+    //         "icon-rotate": ["get", "heading"],
+    //     },
+    // };
+
+    const vehiclesLayerStyle: CircleLayer = {
         source: "vehicles",
         id: "vehicle",
-        type: "symbol",
-        layout: {
-            "icon-image": "bus",
-            "icon-allow-overlap": true,
-            "icon-ignore-placement": true,
-            "icon-anchor": "center",
-            "symbol-placement": "point",
-            "icon-rotation-alignment": "map",
-            "icon-size": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                10,
-                0.1,
-                20,
-                0.4,
-            ],
-            "icon-offset": [0, 0],
-            "icon-rotate": ["get", "heading"],
+        type: "circle",
+        paint: {
+            "circle-color": "#388344",
+            "circle-radius": 5,
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#ffffff",
         },
     };
 
@@ -662,6 +701,7 @@ export default function Home() {
             <CPLogo
                 style={{
                     height: "5%",
+                    width: "auto",
                     position: "absolute",
                     top: "20px",
                     left: 0,
@@ -689,7 +729,7 @@ export default function Home() {
                     size={26}
                 />
             </TopBarButton> */}
-            <TopBarButton
+            {/* <TopBarButton
                 style={{
                     position: "absolute",
                     zIndex: 1,
@@ -700,7 +740,7 @@ export default function Home() {
                 }}
             >
                 <MapPinSimple size={26} />
-            </TopBarButton>
+            </TopBarButton> */}
             <div className="loader-container">
                 <FadeInOut fade={isLoading ? Fade.none : Fade.out}>
                     <Centered style={{ background: "#000" }}>
@@ -793,7 +833,7 @@ export default function Home() {
                             Comboio {selectedVehicle?.trainNumber}
                         </h1>
 
-                        {selectedVehicleInfo && (
+                        {/* {selectedVehicleInfo && (
                             <>
                                 <p>Matrícula: {selectedVehicleInfo.plate}</p>
                                 <p>
@@ -801,7 +841,7 @@ export default function Home() {
                                     {selectedVehicleInfo.chassis.model}
                                 </p>
                             </>
-                        )}
+                        )} */}
 
                         {/* {!!selectedVehicle.chapa && (
                             <>
@@ -821,7 +861,7 @@ export default function Home() {
                             </>
                         )} */}
 
-                        {!!selectedVehicle.serviceCode.code && (
+                        {!!selectedVehicle.serviceCode.designation && (
                             <>
                                 <div
                                     style={{
@@ -829,12 +869,15 @@ export default function Home() {
                                         justifyContent: "space-evenly",
                                     }}
                                 >
-                                    <Pill color={BadgeColor.gray}>
+                                    <Pill color={BadgeColor.green}>
                                         <p>
-                                            {selectedVehicle.serviceCode.code}
+                                            {
+                                                selectedVehicle.serviceCode
+                                                    .designation
+                                            }
                                         </p>
                                         <div style={{ width: "7px" }}></div>
-                                        {"Direction" in selectedVehicle &&
+                                        {/* {"Direction" in selectedVehicle &&
                                             (selectedVehicle.Direction === 0 ? (
                                                 <ArrowUp
                                                     size={15}
@@ -845,7 +888,7 @@ export default function Home() {
                                                     size={15}
                                                     weight="bold"
                                                 />
-                                            ))}
+                                            ))} */}
                                     </Pill>
                                     {/* {"tickets" in selectedVehicle && (
                                         <Pill>
@@ -857,6 +900,128 @@ export default function Home() {
                                 </div>
                                 <div style={{ height: "10px" }}></div>
                             </>
+                        )}
+
+                        {/* {selectedVehicle.trainStops.length > 0 && (
+                            <>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "10px",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            fontWeight: "700",
+                                            fontSize: "0.8rem",
+                                            color: "gray",
+                                        }}
+                                    >
+                                        PRÓXIMAS PARAGENS
+                                    </p>
+                                    <div style={{ height: "5px" }}></div>
+                                    {selectedVehicle.trainStops
+                                        .filter((s) => s.eta || s.arrival)
+                                        .map((stop) => {
+                                            return (
+                                                <div
+                                                    key={stop.station.code}
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "space-between",
+                                                    }}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: "10px",
+                                                        }}
+                                                    >
+                                                        <p
+                                                            style={{
+                                                                fontWeight:
+                                                                    "bold",
+                                                                fontSize:
+                                                                    "1rem",
+                                                            }}
+                                                        >
+                                                            {
+                                                                stop.station
+                                                                    .designation
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                    <div
+                                                        style={{ width: "7px" }}
+                                                    ></div>
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap: "5px",
+                                                        }}
+                                                    >
+                                                        <p
+                                                            style={{
+                                                                fontWeight:
+                                                                    "bold",
+                                                                color: "gray",
+                                                            }}
+                                                        >
+                                                            {stop.eta}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                                <div style={{ height: "10px" }}></div>
+                            </>
+                        )} */}
+
+                        {selectedVehicle.trainStops.length > 0 && (
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    gap: "10px",
+                                }}
+                            >
+                                <h1
+                                    style={{
+                                        fontWeight: "400",
+                                        fontSize: "1rem",
+                                    }}
+                                >
+                                    {
+                                        selectedVehicle.trainStops[0].station
+                                            .designation
+                                    }
+                                </h1>
+
+                                <ArrowRight size={15} weight="bold" />
+                                <h1
+                                    style={{
+                                        fontWeight: "400",
+                                        fontSize: "1rem",
+                                    }}
+                                >
+                                    {
+                                        selectedVehicle.trainStops[
+                                            selectedVehicle.trainStops.length -
+                                                1
+                                        ].station.designation
+                                    }
+                                </h1>
+                            </div>
                         )}
 
                         {/* {"speed" in selectedVehicle && (
