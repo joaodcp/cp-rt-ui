@@ -123,6 +123,7 @@ interface Vehicle {
     longitude: number;
     status: VehicleStatus;
     trainStops: TrainStop[];
+    stationCode?: string; // if IN_TRANSIT or NEAR_NEXT it's the next stop, if AT_STATION or AT_ORIGIN it's the current stop
 
     // calculated
     heading?: number;
@@ -341,46 +342,67 @@ export default function Home() {
         console.log(isLoading);
         if (newVehicles?.vehicles) {
             isLoading && setIsLoading(false);
-            const vehiclesWithHeading = newVehicles.vehicles.map((vehicle) => {
-                if (vehiclesRef.current) {
-                    const previousVehicle = vehiclesRef.current.find(
-                        (v) => v.trainNumber === vehicle.trainNumber
-                    );
-                    if (previousVehicle) {
-                        if (
-                            previousVehicle.latitude !== vehicle.latitude ||
-                            previousVehicle.longitude !== vehicle.longitude
-                        ) {
-                            vehicle.heading = getCalculatedHeading(
-                                [
-                                    previousVehicle.longitude,
-                                    previousVehicle.latitude,
-                                ],
-                                [vehicle.longitude, vehicle.latitude]
-                            );
-                            // const timeElapsed = vehicle.time - previousVehicle.time;
-                            // const distanceMoved = turf.distance(
-                            //     [previousVehicle.lon, previousVehicle.lat],
-                            //     [vehicle.lon, vehicle.lat],
-                            //     {
-                            //         units: "kilometers",
-                            //     }
-                            // );
+            // const vehiclesWithHeading = newVehicles.vehicles.map((vehicle) => {
+            //     if (vehiclesRef.current) {
+            //         const previousVehicle = vehiclesRef.current.find(
+            //             (v) => v.trainNumber === vehicle.trainNumber
+            //         );
+            //         if (previousVehicle) {
+            //             if (
+            //                 previousVehicle.latitude !== vehicle.latitude ||
+            //                 previousVehicle.longitude !== vehicle.longitude
+            //             ) {
+            //                 vehicle.heading = getCalculatedHeading(
+            //                     [
+            //                         previousVehicle.longitude,
+            //                         previousVehicle.latitude,
+            //                     ],
+            //                     [vehicle.longitude, vehicle.latitude]
+            //                 );
+            //                 // const timeElapsed = vehicle.time - previousVehicle.time;
+            //                 // const distanceMoved = turf.distance(
+            //                 //     [previousVehicle.lon, previousVehicle.lat],
+            //                 //     [vehicle.lon, vehicle.lat],
+            //                 //     {
+            //                 //         units: "kilometers",
+            //                 //     }
+            //                 // );
 
-                            // vehicle.speed = (distanceMoved / timeElapsed) * 3600; // km/h
+            //                 // vehicle.speed = (distanceMoved / timeElapsed) * 3600; // km/h
 
-                            return vehicle; // has moved
-                        }
+            //                 return vehicle; // has moved
+            //             }
 
-                        vehicle.heading = previousVehicle.heading;
-                        // vehicle.speed = previousVehicle.speed;
-                        return vehicle; // did not move
-                    }
-                }
-                return vehicle; // no previous vehicle to calculate heading and speed
-            });
+            //             vehicle.heading = previousVehicle.heading;
+            //             // vehicle.speed = previousVehicle.speed;
+            //             return vehicle; // did not move
+            //         }
+            //     }
+            //     return vehicle; // no previous vehicle to calculate heading and speed
+            // });
 
-            setVehicles(vehiclesWithHeading);
+            // const vehiclesWithNextStop = newVehicles.vehicles.map((vehicle) => {
+            //     if (vehicle.trainStops.length > 0) {
+            //         const stopsWithDistance = vehicle.trainStops.map((stop) => {
+            //             const stopLat = parseFloat(stop.latitude);
+            //             const stopLon = parseFloat(stop.longitude);
+            //             const distance = getDistanceFromLatLonInKm(
+            //                 vehicle.latitude,
+            //                 vehicle.longitude,
+            //                 stopLat,
+            //                 stopLon
+            //             );
+            //             return { ...stop, distance };
+            //         });
+
+            //         stopsWithDistance.sort((a, b) => a.distance - b.distance);
+
+            //         vehicle.stop = stopsWithDistance[0];
+            //     }
+            //     return vehicle;
+            // });
+
+            setVehicles(newVehicles.vehicles);
         }
     }, [newVehicles]);
     // useEffect(() => {
@@ -593,6 +615,10 @@ export default function Home() {
                     vehicle.trainStops = JSON.parse(
                         vehicle.trainStops as unknown as string
                     ) as TrainStop[];
+                    // if (vehicle.stop)
+                    //     vehicle.stop = JSON.parse(
+                    //         vehicle.stop as unknown as string
+                    //     ) as TrainStop;
                     onVehicleSelected(vehicle);
                 } catch (e) {}
             }
@@ -1167,6 +1193,15 @@ export default function Home() {
                                         }}
                                     >
                                         Na estação
+                                        {selectedVehicle.stationCode
+                                            ? ` (${
+                                                  selectedVehicle.trainStops.find(
+                                                      (s) =>
+                                                          s.station.code ===
+                                                          selectedVehicle.stationCode
+                                                  )?.station.designation
+                                              })`
+                                            : ""}
                                     </p>
                                 </div>
                             </>
