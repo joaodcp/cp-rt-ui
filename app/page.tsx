@@ -89,6 +89,7 @@ enum VehicleStatus {
     NotStarted = "NOT_STARTED",
     InTransit = "IN_TRANSIT",
     NearNext = "NEAR_NEXT",
+    AtOrigin = "AT_ORIGIN",
     AtStation = "AT_STATION",
     Completed = "COMPLETED",
 }
@@ -641,7 +642,12 @@ export default function Home() {
         id: "vehicle",
         type: "circle",
         paint: {
-            "circle-color": "#388344",
+            "circle-color": [
+                "case",
+                ["==", ["get", "status"], "COMPLETED"],
+                "#808080", // gray color for completed status
+                "#388344", // green color for other statuses
+            ],
             "circle-radius": 5,
             "circle-stroke-width": 2,
             "circle-stroke-color": "#ffffff",
@@ -833,15 +839,35 @@ export default function Home() {
                             Comboio {selectedVehicle?.trainNumber}
                         </h1>
 
-                        {/* {selectedVehicleInfo && (
-                            <>
-                                <p>Matrícula: {selectedVehicleInfo.plate}</p>
-                                <p>
-                                    {selectedVehicleInfo.chassis.brand}{" "}
-                                    {selectedVehicleInfo.chassis.model}
-                                </p>
-                            </>
-                        )} */}
+                        {selectedVehicle.delay == 0 && (
+                            <p
+                                style={{
+                                    position: "absolute",
+                                    top: "30.5px",
+                                    left: "12.5px",
+                                    fontWeight: "700",
+                                    fontSize: "0.8rem",
+                                    color: "gray",
+                                }}
+                            >
+                                A horas
+                            </p>
+                        )}
+
+                        {selectedVehicle.delay > 0 && (
+                            <p
+                                style={{
+                                    position: "absolute",
+                                    top: "30.5px",
+                                    left: "12.5px",
+                                    fontWeight: "700",
+                                    fontSize: "0.8rem",
+                                    color: "gray",
+                                }}
+                            >
+                                Atrasado {selectedVehicle.delay} minutos
+                            </p>
+                        )}
 
                         {/* {!!selectedVehicle.chapa && (
                             <>
@@ -863,6 +889,7 @@ export default function Home() {
 
                         {!!selectedVehicle.serviceCode.designation && (
                             <>
+                                <div style={{ height: "10px" }}></div>
                                 <div
                                     style={{
                                         display: "flex",
@@ -1022,6 +1049,151 @@ export default function Home() {
                                     }
                                 </h1>
                             </div>
+                        )}
+
+                        {selectedVehicle.status === VehicleStatus.Completed && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        Viagem terminada
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        {selectedVehicle.status ===
+                            VehicleStatus.NotStarted && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        Viagem a iniciar
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        {selectedVehicle.status === VehicleStatus.InTransit && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        Em viagem
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        {selectedVehicle.status === VehicleStatus.AtOrigin && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        Na estação inicial
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        {selectedVehicle.status === VehicleStatus.AtStation && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        Na estação
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        {selectedVehicle.status === VehicleStatus.NearNext && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        A aproximar-se da próxima paragem
+                                    </p>
+                                </div>
+                            </>
                         )}
 
                         {/* {"speed" in selectedVehicle && (
