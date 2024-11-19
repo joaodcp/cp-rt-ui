@@ -118,7 +118,7 @@ interface Vehicle {
     trainNumber: number;
     serviceCode: Service;
     delay: number;
-    occupancy: null;
+    occupancy: number;
     latitude: number;
     longitude: number;
     status: VehicleStatus;
@@ -894,6 +894,22 @@ export default function Home() {
                                 Atrasado {selectedVehicle.delay} minutos
                             </p>
                         )}
+
+                        {!!selectedVehicle.occupancy &&
+                            [1, 2, 3].includes(selectedVehicle.occupancy) &&
+                            (selectedVehicle.occupancy == 1 ? (
+                                <p className="text-green-500 font-bold">
+                                    Muitos lugares disponíveis
+                                </p>
+                            ) : selectedVehicle.occupancy == 2 ? (
+                                <p className="text-yellow-500 font-bold">
+                                    Poucos lugares sentados
+                                </p>
+                            ) : (
+                                <p className="text-red-500 font-bold">
+                                    Comboio cheio
+                                </p>
+                            ))}
 
                         {/* {!!selectedVehicle.chapa && (
                             <>
