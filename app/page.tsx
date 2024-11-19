@@ -1239,9 +1239,20 @@ export default function Home() {
                                             fontSize: "0.8rem",
                                             fontWeight: "700",
                                             textTransform: "uppercase",
+                                            textAlign: "center",
                                         }}
                                     >
                                         A aproximar-se da próxima paragem
+                                        <br />
+                                        {selectedVehicle.stationCode
+                                            ? ` (${
+                                                  selectedVehicle.trainStops.find(
+                                                      (s) =>
+                                                          s.station.code ===
+                                                          selectedVehicle.stationCode
+                                                  )?.station.designation
+                                              })`
+                                            : ""}
                                     </p>
                                 </div>
                             </>
