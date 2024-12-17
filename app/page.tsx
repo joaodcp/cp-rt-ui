@@ -906,8 +906,7 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Adiantado {Math.abs(selectedVehicle.delay)}{" "}
-                                minutos
+                                Adiantado {Math.abs(selectedVehicle.delay)} minutos
                             </p>
                         )}
 
