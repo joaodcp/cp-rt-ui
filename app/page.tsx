@@ -891,7 +891,7 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Atrasado {selectedVehicle.delay} minutos
+                                Atrasado {selectedVehicle.delay} minutos{selectedVehicle.delay > 1 ? "s" : ""}
                             </p>
                         )}
 
@@ -906,7 +906,7 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Adiantado {Math.abs(selectedVehicle.delay)} minutos
+                                Adiantado {Math.abs(selectedVehicle.delay)} minutos{selectedVehicle.delay > 1 ? "s" : ""}
                             </p>
                         )}
 
