@@ -895,6 +895,22 @@ export default function Home() {
                             </p>
                         )}
 
+                        {selectedVehicle.delay < 0 && (
+                            <p
+                                style={{
+                                    position: "absolute",
+                                    top: "30.5px",
+                                    left: "12.5px",
+                                    fontWeight: "700",
+                                    fontSize: "0.8rem",
+                                    color: "gray",
+                                }}
+                            >
+                                Adiantado {Math.abs(selectedVehicle.delay)}{" "}
+                                minutos
+                            </p>
+                        )}
+
                         {!!selectedVehicle.occupancy &&
                             [1, 2, 3].includes(selectedVehicle.occupancy) &&
                             (selectedVehicle.occupancy == 1 ? (
