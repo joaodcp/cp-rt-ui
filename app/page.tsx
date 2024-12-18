@@ -806,7 +806,7 @@ export default function Home() {
                     );
 
                     evt.target.setLayerZoomRange("railway", 4, 22);
-                    evt.target.setLayerZoomRange("railway-minor", 15, 22);
+                    evt.target.setLayerZoomRange("railway_minor", 15, 22);
                 }}
                 cursor={cursor}
             >
