@@ -799,7 +799,14 @@ export default function Home() {
                         "#1c4122"
                     );
 
+                    evt.target.setPaintProperty(
+                        "railway_minor",
+                        "line-color",
+                        "#112714"
+                    );
+
                     evt.target.setLayerZoomRange("railway", 4, 22);
+                    evt.target.setLayerZoomRange("railway-minor", 15, 22);
                 }}
                 cursor={cursor}
             >
