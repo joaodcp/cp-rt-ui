@@ -791,6 +791,16 @@ export default function Home() {
                 onClick={handleLayerClick}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
+                onLoad={(evt) => {
+                    // set color of the train railways to green
+                    evt.target.setPaintProperty(
+                        "railway",
+                        "line-color",
+                        "#1c4122"
+                    );
+
+                    evt.target.setLayerZoomRange("railway", 4, 22);
+                }}
                 cursor={cursor}
             >
                 <Source id="line" type="geojson" data={selectedLineGeoJSON}>
@@ -891,7 +901,8 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Atrasado {selectedVehicle.delay} minuto{selectedVehicle.delay == 1 ? "" : "s"}
+                                Atrasado {selectedVehicle.delay} minuto
+                                {selectedVehicle.delay == 1 ? "" : "s"}
                             </p>
                         )}
 
@@ -906,7 +917,8 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Adiantado {Math.abs(selectedVehicle.delay)} minuto{selectedVehicle.delay == 1 ? "" : "s"}
+                                Adiantado {Math.abs(selectedVehicle.delay)}{" "}
+                                minuto{selectedVehicle.delay == 1 ? "" : "s"}
                             </p>
                         )}
 
