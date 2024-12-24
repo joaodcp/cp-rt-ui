@@ -124,6 +124,7 @@ interface Vehicle {
     status: VehicleStatus;
     trainStops: TrainStop[];
     stationCode?: string; // if IN_TRANSIT or NEAR_NEXT it's the next stop, if AT_STATION or AT_ORIGIN it's the current stop
+    updatedAt: number;
 
     // calculated
     heading?: number;
@@ -1319,7 +1320,8 @@ export default function Home() {
                         {/* <p>Distance: {selectedVehicle?.distance}</p>
                         <p>Speed: {selectedVehicle?.speed}</p> */}
                         {/* <p>Time: {selectedVehicle?.time}</p> */}
-                        {/* <p
+                        {"updatedAt" in selectedVehicle && selectedVehicle.updatedAt && (
+                        <p
                             style={{
                                 color: "gray",
                                 position: "absolute",
@@ -1327,11 +1329,11 @@ export default function Home() {
                                 left: "10px",
                             }}
                         >
-                            Enviado pelo veículo às:{" "}
+                            Atualizado às:{" "} 
                             {new Date(
-                                selectedVehicle?.time * 1000
+                                selectedVehicle.updatedAt
                             ).toLocaleTimeString()}
-                        </p> */}
+                        </p>)}
                     </Popup>
                 )}
 
