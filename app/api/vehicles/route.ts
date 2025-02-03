@@ -3,7 +3,7 @@ export async function GET(request: Request) {
         "https://cp-rt.up.railway.app/last-vehicles-snapshot",
         {
             next: {
-                revalidate: 1,
+                revalidate: 10,
             },
             headers: {
                 Authorization: "Bearer " + process.env.CP_RT_API_KEY,
