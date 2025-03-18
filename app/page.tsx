@@ -4,23 +4,23 @@
 import * as turf from "@turf/turf";
 import { LineString, MultiLineString, Feature, Point } from "geojson";
 
-function splitLineStringByClosestPoint(lineString: LineString, point: Point) {
-    const closestPoint = turf.nearestPointOnLine(lineString, point);
+// function splitLineStringByClosestPoint(lineString: LineString, point: Point) {
+//     const closestPoint = turf.nearestPointOnLine(lineString, point);
 
-    const lines = turf.lineSplit(lineString, closestPoint);
+//     const lines = turf.lineSplit(lineString, closestPoint);
 
-    return lines;
-}
+//     return lines;
+// }
 
-function getCalculatedHeading(
-    previousCoordinates: number[],
-    currentCoordinates: number[]
-): number {
-    return turf.bearing(
-        turf.point(currentCoordinates),
-        turf.point(previousCoordinates)
-    );
-}
+// function getCalculatedHeading(
+//     previousCoordinates: number[],
+//     currentCoordinates: number[]
+// ): number {
+//     return turf.bearing(
+//         turf.point(currentCoordinates),
+//         turf.point(previousCoordinates)
+//     );
+// }
 
 // function getPopupAnchorForHeading(heading: number): PositionAnchor {
 //     if (heading >= 45 && heading < 135) {
@@ -81,54 +81,10 @@ import InfoDialog from "@/components/InfoDialog/InfoDialog";
 import CPLogo from "@/components/CPLogo";
 import ArrivingBusAnimation from "@/components/ArrivingBusAnimation/ArrivingBusAnimation";
 import BusIcon from "@/components/BusIcon";
+import { Service, TrainStop, Vehicle, VehicleStatus } from "@/types/cp";
 
 const unauthenticatedFetcher = (url: string) =>
     fetch(url).then((res) => res.json());
-
-enum VehicleStatus {
-    NotStarted = "NOT_STARTED",
-    InTransit = "IN_TRANSIT",
-    NearNext = "NEAR_NEXT",
-    AtOrigin = "AT_ORIGIN",
-    AtStation = "AT_STATION",
-    Completed = "COMPLETED",
-}
-
-interface Service {
-    code: string;
-    designation: string;
-}
-
-interface TrainStop {
-    station: {
-        code: string;
-        designation: string;
-    };
-    arrival: string;
-    departure: string;
-    platform: string;
-    latitude: string;
-    longitude: string;
-    delay: number;
-    eta: string;
-    etd: string;
-}
-
-interface Vehicle {
-    trainNumber: number;
-    serviceCode: Service;
-    delay: number;
-    occupancy: number;
-    latitude: number;
-    longitude: number;
-    status: VehicleStatus;
-    trainStops: TrainStop[];
-    stationCode?: string; // if IN_TRANSIT or NEAR_NEXT it's the next stop, if AT_STATION or AT_ORIGIN it's the current stop
-    updatedAt: number;
-
-    // calculated
-    heading?: number;
-}
 
 interface GeoJSON {
     type: string;
@@ -141,81 +97,7 @@ interface GeoJSONFeature {
         coordinates: number[] | number[][];
         type: string;
     };
-    properties?: Vehicle | Stop;
-}
-
-interface Stop {
-    type: string;
-    Code: string;
-    Contacts: any[];
-    CoordX: number;
-    CoordY: number;
-    Description: string | null;
-    Id: number;
-    Lines: number[];
-    Name: string;
-    Provider: string;
-    TransportType: number;
-    Type: number;
-    WorkingHours: any[];
-    transportType: number;
-}
-
-interface NextArrival {
-    Destination: string;
-    DestinationId: number;
-    Direction: number;
-    Duration: number;
-    Exceptions: any[];
-    FareZone: string;
-    GPSStop: boolean;
-    Id: number;
-    IsRT: boolean;
-    LineCode: string;
-    LineColor: number;
-    LineId: number;
-    Msg: string | null;
-    Name: string;
-    NrVehicle: number;
-    Order: number;
-    Path: string | null;
-    PathId: number;
-    Provider: string | null;
-    StopCode: string;
-    StopId: number;
-    TicketNum: number;
-    TimeStamp: number;
-    TripId: number;
-    VehicleTrip: any | null;
-    X: number;
-    Y: number;
-}
-
-interface VehicleInfo {
-    fleetNumber: number;
-    plate: string | null;
-    chassis: {
-        brand: string | null;
-        model: string | null;
-    };
-    body: {
-        brand: string | null;
-        model: string | null;
-    };
-    firstPlateYear: number | null;
-    startedServiceYear: number | null;
-    scrappedYear: number | null;
-    observations: string | null;
-    externalUpdatedOn: string | null;
-}
-
-function sortArrivals(arrivals: NextArrival[]) {
-    // sort by duration, then the ones that are real time first
-    return arrivals.sort((a, b) => {
-        if (a.IsRT && !b.IsRT) return -1;
-        if (!a.IsRT && b.IsRT) return 1;
-        return a.Duration - b.Duration;
-    });
+    properties?: Vehicle & { type: string };
 }
 
 export default function Home() {
@@ -238,22 +120,12 @@ export default function Home() {
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(
         null
     );
-    const [selectedVehicleInfo, setSelectedVehicleInfo] =
-        useState<VehicleInfo | null>(null);
-    const [cursor, setCursor] = useState<string>("auto");
-    const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
-    const [selectedDirection, setSelectedDirection] = useState<number | null>(
-        null
-    );
 
-    const [selectedLineGeoJSON, setSelectedLineGeoJSON] =
-        useState<GeoJSON | null>(null);
+    const [cursor, setCursor] = useState<string>("auto");
 
     const [isLoading, _setIsLoading] = useState<boolean>(true);
 
     const [isSSEErrored, _setIsSSEErrored] = useState<boolean>(false);
-
-    const [showInfoDialog, setShowInfoDialog] = useState<boolean>(false);
 
     const onMouseEnter = useCallback(() => setCursor("pointer"), []);
     const onMouseLeave = useCallback(() => setCursor("auto"), []);
@@ -311,118 +183,14 @@ export default function Home() {
         refreshInterval: 5_000,
     });
 
-    const [stops, setStops] = useState<Stop[] | null>(null);
-
-    const [showStopsOnMap, setShowStopsOnMap] = useState<boolean>(false);
-
-    const [selectedStop, setSelectedStop] = useState<Stop | null>(null);
-
-    const [showStopPopup, setShowStopPopup] = useState<boolean>(false);
-
-    const [selectedStopNextArrivals, _setSelectedStopNextArrivals] = useState<
-        NextArrival[] | null
-    >(null);
-
-    const selectedStopNextArrivalsRef = useRef(selectedStopNextArrivals);
-    const setSelectedStopNextArrivals = (data: NextArrival[] | null) => {
-        selectedStopNextArrivalsRef.current = data;
-        _setSelectedStopNextArrivals(data);
-    };
-
-    const [isLoadingArrivals, setIsLoadingArrivals] = useState<boolean>(false);
-
-    // useEffect(() => {
-    //     fetch("/api/stops")
-    //         .then((res) => res.json())
-    //         .then((stops) => {
-    //             setStops(stops);
-    //         });
-    // }, []);
-
     useEffect(() => {
         console.log(isLoading);
         if (newVehicles?.vehicles) {
             isLoading && setIsLoading(false);
-            // const vehiclesWithHeading = newVehicles.vehicles.map((vehicle) => {
-            //     if (vehiclesRef.current) {
-            //         const previousVehicle = vehiclesRef.current.find(
-            //             (v) => v.trainNumber === vehicle.trainNumber
-            //         );
-            //         if (previousVehicle) {
-            //             if (
-            //                 previousVehicle.latitude !== vehicle.latitude ||
-            //                 previousVehicle.longitude !== vehicle.longitude
-            //             ) {
-            //                 vehicle.heading = getCalculatedHeading(
-            //                     [
-            //                         previousVehicle.longitude,
-            //                         previousVehicle.latitude,
-            //                     ],
-            //                     [vehicle.longitude, vehicle.latitude]
-            //                 );
-            //                 // const timeElapsed = vehicle.time - previousVehicle.time;
-            //                 // const distanceMoved = turf.distance(
-            //                 //     [previousVehicle.lon, previousVehicle.lat],
-            //                 //     [vehicle.lon, vehicle.lat],
-            //                 //     {
-            //                 //         units: "kilometers",
-            //                 //     }
-            //                 // );
-
-            //                 // vehicle.speed = (distanceMoved / timeElapsed) * 3600; // km/h
-
-            //                 return vehicle; // has moved
-            //             }
-
-            //             vehicle.heading = previousVehicle.heading;
-            //             // vehicle.speed = previousVehicle.speed;
-            //             return vehicle; // did not move
-            //         }
-            //     }
-            //     return vehicle; // no previous vehicle to calculate heading and speed
-            // });
-
-            // const vehiclesWithNextStop = newVehicles.vehicles.map((vehicle) => {
-            //     if (vehicle.trainStops.length > 0) {
-            //         const stopsWithDistance = vehicle.trainStops.map((stop) => {
-            //             const stopLat = parseFloat(stop.latitude);
-            //             const stopLon = parseFloat(stop.longitude);
-            //             const distance = getDistanceFromLatLonInKm(
-            //                 vehicle.latitude,
-            //                 vehicle.longitude,
-            //                 stopLat,
-            //                 stopLon
-            //             );
-            //             return { ...stop, distance };
-            //         });
-
-            //         stopsWithDistance.sort((a, b) => a.distance - b.distance);
-
-            //         vehicle.stop = stopsWithDistance[0];
-            //     }
-            //     return vehicle;
-            // });
 
             setVehicles(newVehicles.vehicles);
         }
     }, [newVehicles]);
-    // useEffect(() => {
-    //     if (vehicles && !isMapLoading) {
-    //         setIsLoading(false);
-    //     }
-    // }, [vehicles, isMapLoading]);
-
-    // const {
-    //     data: vehicles,
-    //     isLoading,
-    //     error,
-    // } = useSWR<Vehicle[]>(
-    //     "https://mobibus-gateway.ndrive.com/busLocation/*",
-    //     fetcher,
-    //     {
-    //         refreshInterval: 1000,
-    //     }
-    // );
 
     useEffect(() => {
         if (vehicles && isLoading) {
@@ -459,140 +227,10 @@ export default function Home() {
         });
     });
 
-    const stopsGeoJSON: GeoJSON = {
-        type: "FeatureCollection",
-        features: [],
-    };
-
-    stops?.forEach((stop: Stop) => {
-        stopsGeoJSON.features.push({
-            type: "Feature",
-            geometry: {
-                type: "Point",
-                coordinates: [stop.CoordY, stop.CoordX],
-            },
-            properties: { ...stop, type: "stop" },
-        });
-    });
-
-    useEffect(() => {
-        function fetchAndSetSelectedStopNextArrivals() {
-            if (selectedStop) {
-                if (!selectedStopNextArrivalsRef.current)
-                    setIsLoadingArrivals(true);
-                fetch("/api/stops/" + selectedStop.Id + "/times")
-                    .then((res) => res.json())
-                    .then((data) => {
-                        setSelectedStopNextArrivals(
-                            sortArrivals(
-                                data.filter((a: NextArrival) => a.LineCode)
-                            )
-                        );
-                        setIsLoadingArrivals(false);
-                    });
-            }
-        }
-
-        let intervalId: NodeJS.Timeout | null = null;
-
-        if (selectedStop && showStopPopup) {
-            fetchAndSetSelectedStopNextArrivals();
-            intervalId = setInterval(fetchAndSetSelectedStopNextArrivals, 5000);
-        } else {
-            setSelectedStopNextArrivals(null);
-            setIsLoadingArrivals(false);
-        }
-
-        return () => {
-            if (intervalId) {
-                clearInterval(intervalId);
-            }
-        };
-    }, [selectedStop, showStopPopup]);
-
-    // useEffect(() => {
-    //     if (selectedVehicle) {
-    //         fetch(`/api/vehicles/${selectedVehicle.trainNumber}`)
-    //             .then((res) => res.json())
-    //             .then((data) => {
-    //                 setSelectedVehicleInfo(data);
-    //             });
-    //     }
-    // }, [selectedVehicle]);
-
-    // useEffect(() => {
-    //     console.log("Changed selectedLineId", selectedLineId);
-    //     console.log("Changed selectedDirection", selectedDirection);
-    //     console.log("Using selectedVehicle", selectedVehicle);
-    //     if (
-    //         selectedLineId !== null && // as these are ints 0 is falsy so we need to check, tehcnically no need to do for lineId because there is no line 0 but stil
-    //         selectedDirection !== null &&
-    //         selectedVehicle
-    //     ) {
-    //         console.log("SelectedLineId to fetch GEOJSON", selectedLineId);
-    //         console.log(
-    //             "SelectedDirection to fetch GEOJSON",
-    //             selectedDirection
-    //         );
-    //         fetch(
-    //             `${CFW_TUBR_BASE_URL}/${selectedLineId}/${
-    //                 selectedDirection === 0 ? 1 : 0
-    //             }`
-    //         )
-    //             .then((res) => res.json())
-    //             .then((data) => {
-    //                 console.log(data);
-    //                 const lineString = turf.lineString(
-    //                     data.shape.features[0].geometry.coordinates
-    //                 );
-
-    //                 // const busPoint = turf.point([
-    //                 //     selectedVehicle.lon,
-    //                 //     selectedVehicle.lat,
-    //                 // ]);
-
-    //                 // const splitLinesGeoJSON = splitLineStringByClosestPoint(
-    //                 //     lineString.geometry,
-    //                 //     busPoint.geometry
-    //                 // );
-
-    //                 // console.log();
-
-    //                 // console.log(turf.bbox(lineString));
-    //                 const buffered = turf.buffer(lineString, 500, {
-    //                     units: "meters",
-    //                 });
-    //                 map?.fitBounds(turf.bbox(buffered) as LngLatBoundsLike);
-    //                 // map?.fitBounds([
-    //                 //     [32.958984, -5.353521],
-    //                 //     [43.50585, 5.615985],
-    //                 // ]);
-
-    //                 setSelectedLineGeoJSON(data.shape);
-    //             });
-
-    //         console.log("SelectedLineGeoJSON", selectedLineGeoJSON);
-    //     } else {
-    //         setSelectedLineGeoJSON({
-    //             type: "FeatureCollection",
-    //             features: [],
-    //         });
-    //     }
-    // }, [selectedLineId, selectedDirection]);
-
-    function onStopSelected(stop: Stop) {
-        setSelectedStopNextArrivals(null);
-        console.log("SETTING STOP:", stop);
-        setSelectedStop(stop);
-        setShowStopPopup(true);
-    }
-
     function onVehicleSelected(vehicle: Vehicle) {
         console.log("SETTING VEHICLE:", vehicle);
         setSelectedVehicle(vehicle);
-        // setSelectedLineId(vehicle?.TripIdentifier ?? null);
-        // setSelectedDirection(vehicle?.Direction ?? null);
-        console.log(selectedVehicle, selectedLineId, selectedDirection);
+        console.log(selectedVehicle);
         console.log("Trying to select vehicle", vehicle);
         console.log("SelectedVehicle", selectedVehicle);
         setShowPopup(true);
@@ -603,10 +241,7 @@ export default function Home() {
         if (event?.features?.[0]) {
             console.log(event?.features?.[0].properties.type);
 
-            if (event?.features?.[0].properties.type === "stop") {
-                const stop = event?.features?.[0].properties as Stop;
-                onStopSelected(stop);
-            } else if (event?.features?.[0].properties.type === "vehicle") {
+            if (event?.features?.[0].properties.type === "vehicle") {
                 const vehicle = event?.features?.[0].properties as Vehicle;
                 // idk why but nested objects are stringified in the event properties??
                 try {
@@ -627,16 +262,10 @@ export default function Home() {
     };
 
     const handlePopupClose = () => {
-        // setSelectedLineGeoJSON(null);
         setShowPopup(false);
-        setSelectedLineId(null);
-        setSelectedDirection(null);
-        setSelectedStop(null);
-        setShowStopPopup(false);
 
         // TODO: test this
         setSelectedVehicle(null);
-        setSelectedVehicleInfo(null);
     };
 
     // const vehiclesLayerStyle: SymbolLayer = {
@@ -697,32 +326,6 @@ export default function Home() {
             "line-join": "round",
         },
     };
-
-    const stopsLayerStyle: CircleLayer = {
-        source: "stops",
-        id: "stop",
-        type: "circle",
-        paint: {
-            "circle-color": "#ffcd1e",
-            "circle-radius": 3,
-            "circle-stroke-width": 1,
-            "circle-stroke-color": "#ffffff",
-        },
-    };
-
-    function onFlyToVehicle(vehicleNumber: number) {
-        handlePopupClose();
-        const vehicle = vehicles?.find((v) => v.trainNumber === vehicleNumber);
-        if (vehicle) {
-            map?.flyTo({
-                center: [vehicle.longitude, vehicle.latitude],
-                zoom: 16,
-                essential: true,
-            });
-
-            onVehicleSelected(vehicle);
-        }
-    }
 
     return (
         <>
@@ -811,51 +414,6 @@ export default function Home() {
                 }}
                 cursor={cursor}
             >
-                <Source id="line" type="geojson" data={selectedLineGeoJSON}>
-                    <Layer {...selectedLineLayerStyle}></Layer>
-                    {/* <Layer
-                        type="symbol"
-                        source="line"
-                        layout={{
-                            "icon-allow-overlap": true,
-                            "icon-ignore-placement": true,
-                            "icon-anchor": "center",
-                            "symbol-placement": "line",
-                            "icon-image": "arrow",
-                            "icon-size": [
-                                "interpolate",
-                                ["linear"],
-                                ["zoom"],
-                                10,
-                                0.2,
-                                20,
-                                0.4,
-                            ],
-                            "symbol-spacing": [
-                                "interpolate",
-                                ["linear"],
-                                ["zoom"],
-                                10,
-                                2,
-                                20,
-                                30,
-                            ],
-                            "icon-offset": [0, 0],
-                            "icon-rotate": selectedDirection === 1 ? 90 : -90,
-                        }}
-                        paint={{
-                            "icon-color": "#ffffff",
-                            "icon-opacity": 0.6,
-                        }}
-                    /> */}
-                </Source>
-
-                {showStopsOnMap ? (
-                    <Source id="stops" type="geojson" data={stopsGeoJSON}>
-                        <Layer {...stopsLayerStyle} beforeId="vehicle"></Layer>
-                    </Source>
-                ) : null}
-
                 <Source id="vehicles" type="geojson" data={vehiclesGeoJSON}>
                     <Layer {...vehiclesLayerStyle}></Layer>
                 </Source>
@@ -1320,250 +878,22 @@ export default function Home() {
                         {/* <p>Distance: {selectedVehicle?.distance}</p>
                         <p>Speed: {selectedVehicle?.speed}</p> */}
                         {/* <p>Time: {selectedVehicle?.time}</p> */}
-                        {"updatedAt" in selectedVehicle && selectedVehicle.updatedAt && (
-                        <p
-                            style={{
-                                color: "gray",
-                                position: "absolute",
-                                bottom: "2px",
-                                left: "10px",
-                            }}
-                        >
-                            Atualizado às:{" "} 
-                            {new Date(
-                                selectedVehicle.updatedAt
-                            ).toLocaleTimeString()}
-                        </p>)}
-                    </Popup>
-                )}
-
-                {showStopPopup && selectedStop && (
-                    <Popup
-                        longitude={selectedStop.CoordY}
-                        latitude={selectedStop.CoordX}
-                        anchor="bottom"
-                        offset={20}
-                        onClose={() => setShowStopPopup(false)}
-                    >
-                        <div>
-                            <p
-                                style={{
-                                    fontWeight: "700",
-                                    fontSize: "0.8rem",
-                                    color: "gray",
-                                }}
-                            >
-                                PARAGEM
-                            </p>
-                            <h1
-                                style={{
-                                    fontWeight: "900",
-                                    fontSize: "1.1rem",
-                                }}
-                            >
-                                {selectedStop.Name}
-                            </h1>
-                            <div style={{ height: "10px" }}></div>
-                            <p style={{ color: "gray", opacity: 0.5 }}>
-                                {"Code: " + selectedStop.Code}{" "}
-                                {"ID: " + selectedStop.Id}
-                            </p>
-
-                            {/* <div style={{ height: "15px" }}></div> */}
-                            {/* {isLoadingArrivals ? (
-                                <Loader />
-                            ) : selectedStopNextArrivals?.length == 0 ? (
+                        {"updatedAt" in selectedVehicle &&
+                            selectedVehicle.updatedAt && (
                                 <p
                                     style={{
-                                        fontWeight: "700",
-                                        fontSize: "0.8rem",
                                         color: "gray",
+                                        position: "absolute",
+                                        bottom: "2px",
+                                        left: "10px",
                                     }}
                                 >
-                                    SEM PRÓXIMAS PASSAGENS
+                                    Atualizado às:{" "}
+                                    {new Date(
+                                        selectedVehicle.updatedAt
+                                    ).toLocaleTimeString()}
                                 </p>
-                            ) : (
-                                <>
-                                    <p
-                                        style={{
-                                            fontWeight: "700",
-                                            fontSize: "0.8rem",
-                                            color: "gray",
-                                        }}
-                                    >
-                                        PRÓXIMAS PASSAGENS
-                                    </p>
-                                    <div style={{ height: "5px" }}></div>
-
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            gap: "10px",
-                                        }}
-                                    >
-                                        {selectedStopNextArrivals?.map(
-                                            (arrival) => {
-                                                return (
-                                                    <div
-                                                        key={`${arrival.Id}_${arrival.LineCode}_${arrival.Duration}`}
-                                                        style={{
-                                                            display: "flex",
-                                                            alignItems:
-                                                                "center",
-                                                            justifyContent:
-                                                                "space-between",
-                                                        }}
-                                                    >
-                                                        <div
-                                                            style={{
-                                                                display: "flex",
-                                                                alignItems:
-                                                                    "center",
-                                                                gap: "10px",
-                                                            }}
-                                                        >
-                                                            <Pill
-                                                                color={
-                                                                    BadgeColor.yellow
-                                                                }
-                                                            >
-                                                                <p>
-                                                                    {
-                                                                        arrival.LineCode
-                                                                    }
-                                                                </p>
-                                                            </Pill>
-                                                            <ArrowRight
-                                                                size={15}
-                                                                weight="bold"
-                                                            />
-                                                            <p
-                                                                style={{
-                                                                    fontWeight:
-                                                                        "bold",
-                                                                    fontSize:
-                                                                        "1rem",
-                                                                }}
-                                                            >
-                                                                {
-                                                                    arrival.Destination
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                        <div
-                                                            style={{
-                                                                width: "7px",
-                                                            }}
-                                                        ></div>
-                                                        <div
-                                                            style={{
-                                                                display: "flex",
-                                                                alignItems:
-                                                                    "center",
-                                                                gap: "5px",
-                                                            }}
-                                                        >
-                                                            <p
-                                                                style={{
-                                                                    fontWeight:
-                                                                        "bold",
-                                                                    color: arrival.IsRT
-                                                                        ? "green"
-                                                                        : "white",
-                                                                }}
-                                                            >
-                                                                {arrival.Duration ==
-                                                                0 ? (
-                                                                    <ArrivingBusAnimation color="green" />
-                                                                ) : (
-                                                                    `${arrival.Duration} min`
-                                                                )}
-                                                            </p>
-                                                            {!!arrival.NrVehicle && (
-                                                                <button
-                                                                    onClick={() =>
-                                                                        !!vehicles?.find(
-                                                                            // being done thrice
-                                                                            (
-                                                                                v
-                                                                            ) =>
-                                                                                v.Number ===
-                                                                                arrival.NrVehicle
-                                                                        )
-                                                                            ? onFlyToVehicle(
-                                                                                  arrival.NrVehicle
-                                                                              )
-                                                                            : null
-                                                                    }
-                                                                    style={{
-                                                                        cursor: !!vehicles?.find(
-                                                                            (
-                                                                                v
-                                                                            ) =>
-                                                                                v.Number ===
-                                                                                arrival.NrVehicle
-                                                                        )
-                                                                            ? "pointer"
-                                                                            : "default",
-                                                                    }}
-                                                                >
-                                                                    <Pill
-                                                                        color={
-                                                                            BadgeColor.subtlePurple
-                                                                        }
-                                                                        wrapping={
-                                                                            true
-                                                                        }
-                                                                    >
-                                                                        <div
-                                                                            style={{
-                                                                                display:
-                                                                                    "flex",
-                                                                                alignItems:
-                                                                                    "center",
-                                                                                gap: "5px",
-                                                                                padding:
-                                                                                    "0 5px",
-                                                                            }}
-                                                                        >
-                                                                            <BusIcon
-                                                                                color="#A72784"
-                                                                                sizeRatio={
-                                                                                    0.5
-                                                                                }
-                                                                            />
-                                                                            <p>
-                                                                                {
-                                                                                    arrival.NrVehicle
-                                                                                }
-                                                                            </p>
-                                                                            {!!vehicles?.find(
-                                                                                (
-                                                                                    v
-                                                                                ) =>
-                                                                                    v.Number ===
-                                                                                    arrival.NrVehicle
-                                                                            ) && (
-                                                                                <CaretRight
-                                                                                    size={
-                                                                                        15
-                                                                                    }
-                                                                                />
-                                                                            )}
-                                                                        </div>
-                                                                    </Pill>
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-                                        )}
-                                    </div>
-                                </>
-                            )} */}
-                        </div>
+                            )}
                     </Popup>
                 )}
             </WGLMap>
