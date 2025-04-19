@@ -7,6 +7,8 @@ export async function GET(request: Request) {
             },
             headers: {
                 Authorization: "Bearer " + process.env.CP_RT_API_KEY,
+                Pragma: "no-cache",
+                "Cache-Control": "no-cache",
             },
         }
     );
