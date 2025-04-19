@@ -188,7 +188,25 @@ export default function Home() {
         if (newVehicles?.vehicles) {
             isLoading && setIsLoading(false);
 
-            setVehicles(newVehicles.vehicles);
+            setVehicles(
+                newVehicles.vehicles.filter((v) => {
+                    const completedAtHour = parseInt(
+                        v.trainStops[v.trainStops.length - 1].eta.split(":")[1]
+                    );
+                    const currentHour = new Date().getHours();
+
+                    // lazy calculation but meh
+                    const completedHoursAgo = Math.abs(
+                        completedAtHour - currentHour
+                    );
+
+                    return (
+                        v.status !== VehicleStatus.Cancelled &&
+                        v.status !== VehicleStatus.Completed &&
+                        completedHoursAgo > 2
+                    );
+                })
+            );
         }
     }, [newVehicles]);
 

@@ -5,6 +5,7 @@ export enum VehicleStatus {
     AtOrigin = "AT_ORIGIN",
     AtStation = "AT_STATION",
     Completed = "COMPLETED",
+    Cancelled = "CANCELLED",
 }
 
 export interface Service {
