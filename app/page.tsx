@@ -188,25 +188,26 @@ export default function Home() {
         if (newVehicles?.vehicles) {
             isLoading && setIsLoading(false);
 
-            setVehicles(
-                newVehicles.vehicles.filter((v) => {
-                    const completedAtHour = parseInt(
-                        v.trainStops[v.trainStops.length - 1].eta.split(":")[1]
-                    );
-                    const currentHour = new Date().getHours();
+            // setVehicles(
+            //     newVehicles.vehicles.filter((v) => {
+            //         const completedAtHour = parseInt(
+            //             v.trainStops[v.trainStops.length - 1].eta.split(":")[1]
+            //         );
+            //         const currentHour = new Date().getHours();
 
-                    // lazy calculation but meh
-                    const completedHoursAgo = Math.abs(
-                        completedAtHour - currentHour
-                    );
+            //         // lazy calculation but meh
+            //         const completedHoursAgo = Math.abs(
+            //             completedAtHour - currentHour
+            //         );
 
-                    return (
-                        v.status !== VehicleStatus.Cancelled &&
-                        v.status !== VehicleStatus.Completed &&
-                        completedHoursAgo > 2
-                    );
-                })
-            );
+            //         return (
+            //             v.status !== VehicleStatus.Cancelled &&
+            //             v.status !== VehicleStatus.Completed &&
+            //             completedHoursAgo > 2
+            //         );
+            //     })
+            // );
+            setVehicles(newVehicles.vehicles);
         }
     }, [newVehicles]);
 
@@ -318,9 +319,11 @@ export default function Home() {
         paint: {
             "circle-color": [
                 "case",
+                ["==", ["get", "status"], "CANCELLED"],
+                "#D7263D", // strong red
                 ["==", ["get", "status"], "COMPLETED"],
-                "#808080", // gray color for completed status
-                "#388344", // green color for other statuses
+                "#808080", // gray
+                "#388344", // default green
             ],
             "circle-radius": 5,
             "circle-stroke-width": 2,
@@ -864,6 +867,30 @@ export default function Home() {
                                                   )?.station.designation
                                               })`
                                             : ""}
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        {selectedVehicle.status === VehicleStatus.AtOrigin && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "#d7263d",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        Suprimido
                                     </p>
                                 </div>
                             </>
