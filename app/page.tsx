@@ -872,7 +872,7 @@ export default function Home() {
                             </>
                         )}
 
-                        {selectedVehicle.status === VehicleStatus.AtOrigin && (
+                        {selectedVehicle.status === VehicleStatus.Cancelled && (
                             <>
                                 <div style={{ height: "5px" }}></div>
 
