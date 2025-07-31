@@ -505,7 +505,7 @@ export default function Home() {
                                 }}
                             >
                                 Adiantado {Math.abs(selectedVehicle.delay)}{" "}
-                                minuto{selectedVehicle.delay == 1 ? "" : "s"}
+                                minuto{selectedVehicle.delay == -1 ? "" : "s"}
                             </p>
                         )}
 
