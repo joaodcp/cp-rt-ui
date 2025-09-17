@@ -57,9 +57,11 @@ import {
     ArrowRight,
     ArrowUp,
     CaretRight,
+    ChartBar,
     Eye,
     Gauge,
     Info,
+    MagnifyingGlass,
     MapPinSimple,
     Moon,
     Path,
@@ -82,6 +84,7 @@ import CPLogo from "@/components/CPLogo";
 import ArrivingBusAnimation from "@/components/ArrivingBusAnimation/ArrivingBusAnimation";
 import BusIcon from "@/components/BusIcon";
 import { Service, TrainStop, Vehicle, VehicleStatus } from "@/types/cp";
+import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay";
 
 const unauthenticatedFetcher = (url: string) =>
     fetch(url).then((res) => res.json());
@@ -126,6 +129,8 @@ export default function Home() {
     const [isLoading, _setIsLoading] = useState<boolean>(true);
 
     const [isSSEErrored, _setIsSSEErrored] = useState<boolean>(false);
+
+    const [showSearchOverlay, setShowSearchOverlay] = useState<boolean>(false);
 
     const onMouseEnter = useCallback(() => setCursor("pointer"), []);
     const onMouseLeave = useCallback(() => setCursor("auto"), []);
@@ -287,6 +292,16 @@ export default function Home() {
         setSelectedVehicle(null);
     };
 
+    const handleSearchVehicleSelect = (vehicle: Vehicle) => {
+        onVehicleSelected(vehicle);
+        map?.flyTo({
+            center: [vehicle.longitude, vehicle.latitude],
+            zoom: 15,
+            essential: true, // this animation is considered essential with respect to prefers-reduced-motion
+        });
+        setShowSearchOverlay(false);
+    };
+
     // const vehiclesLayerStyle: SymbolLayer = {
     //     source: "vehicles",
     //     id: "vehicle",
@@ -355,6 +370,12 @@ export default function Home() {
                 onClose={() => setShowInfoDialog(false)}
             /> */}
             <Toaster richColors />
+            <SearchOverlay
+                isOpen={showSearchOverlay}
+                onClose={() => setShowSearchOverlay(false)}
+                vehicles={vehicles || []}
+                onVehicleSelect={handleSearchVehicleSelect}
+            />
             <CPLogo
                 style={{
                     height: "5%",
@@ -398,6 +419,30 @@ export default function Home() {
             >
                 <MapPinSimple size={26} />
             </TopBarButton> */}
+            {/* <TopBarButton
+                style={{
+                    position: "absolute",
+                    zIndex: 1,
+                    left: 0,
+                }}
+                onClick={() => {
+                    alert("Will show stats");
+                }}
+            >
+                <ChartBar size={26} />
+            </TopBarButton> */}
+            <TopBarButton
+                style={{
+                    position: "absolute",
+                    zIndex: 1,
+                    right: 0,
+                }}
+                onClick={() => {
+                    setShowSearchOverlay(!showSearchOverlay);
+                }}
+            >
+                <MagnifyingGlass size={26} />
+            </TopBarButton>
             <div className="loader-container">
                 <FadeInOut fade={isLoading ? Fade.none : Fade.out}>
                     <Centered style={{ background: "#000" }}>

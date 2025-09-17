@@ -3,9 +3,9 @@
     height: 100vh;
 }
 
-@supports (height: 100dvh) and (width: 100dvw) {
+@supports (height: 100lvh) and (width: 100lvw) {
     .map {
-        width: 100dvw;
-        height: 100dvh;
+        width: 100lvw;
+        height: 100lvh;
     }
 }
