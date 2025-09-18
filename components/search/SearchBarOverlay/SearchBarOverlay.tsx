@@ -323,8 +323,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
                             {/* Description */}
                             <p className="text-gray-500 text-base max-w-sm mx-auto leading-relaxed">
-                                Comece a escrever o número do comboio, nome da
-                                linha ou estação para encontrar informações em
+                                Comece a escrever o número do comboio, nome do
+                                serviço ou estação para encontrar informações em
                                 tempo real
                             </p>
                         </div>
