@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { MagnifyingGlass, X, Train, CaretRight } from "@phosphor-icons/react";
+import {
+    MagnifyingGlass,
+    X,
+    Train,
+    CaretRight,
+    ArrowRight,
+    User,
+    Users,
+    UsersThree,
+} from "@phosphor-icons/react";
 
 // Add keyframe animations
 const styles = `
@@ -245,14 +254,17 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
                                                     {vehicle.trainStops
                                                         ?.length > 0 && (
-                                                        <p className="text-sm text-gray-400 mt-1">
+                                                        <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
                                                             {
                                                                 vehicle
                                                                     .trainStops[0]
                                                                     .station
                                                                     .designation
-                                                            }{" "}
-                                                            →{" "}
+                                                            }
+                                                            <ArrowRight
+                                                                size={15}
+                                                                weight="bold"
+                                                            />
                                                             {
                                                                 vehicle
                                                                     .trainStops[
@@ -267,7 +279,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                     )}
 
                                                     {/* Delay info */}
-                                                    <div className="mt-1">
+                                                    <div className="mt-1 flex items-center gap-2">
                                                         {vehicle.delay ===
                                                             0 && (
                                                             <span className="text-xs font-medium text-green-400">
@@ -289,6 +301,30 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                 )}
                                                                 min
                                                             </span>
+                                                        )}
+                                                        {vehicle.occupancy ===
+                                                            1 && (
+                                                            <User
+                                                                size={15}
+                                                                weight="bold"
+                                                                className="text-green-500"
+                                                            />
+                                                        )}
+                                                        {vehicle.occupancy ===
+                                                            2 && (
+                                                            <Users
+                                                                size={15}
+                                                                weight="bold"
+                                                                className="text-yellow-500"
+                                                            />
+                                                        )}
+                                                        {vehicle.occupancy ===
+                                                            3 && (
+                                                            <UsersThree
+                                                                size={15}
+                                                                weight="bold"
+                                                                className="text-red-500"
+                                                            />
                                                         )}
                                                     </div>
                                                 </div>
