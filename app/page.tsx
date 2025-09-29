@@ -562,21 +562,24 @@ export default function Home() {
                             </p>
                         )}
 
-                        {!!selectedVehicle.occupancy &&
-                            [1, 2, 3].includes(selectedVehicle.occupancy) &&
-                            (selectedVehicle.occupancy == 1 ? (
-                                <p className="text-green-500 font-bold">
-                                    Muitos lugares disponíveis
-                                </p>
-                            ) : selectedVehicle.occupancy == 2 ? (
-                                <p className="text-yellow-500 font-bold">
-                                    Poucos lugares sentados
-                                </p>
-                            ) : (
-                                <p className="text-red-500 font-bold">
-                                    Comboio cheio
-                                </p>
-                            ))}
+                        {selectedVehicle.occupancy && (
+                            <p
+                                className={`font-bold ${
+                                    selectedVehicle.occupancy < 50
+                                        ? "text-green-500"
+                                        : selectedVehicle.occupancy < 80
+                                        ? "text-yellow-500"
+                                        : "text-red-500"
+                                }`}
+                            >
+                                {selectedVehicle.occupancy < 50
+                                    ? "Muitos lugares disponíveis"
+                                    : selectedVehicle.occupancy < 80
+                                    ? "Poucos lugares sentados"
+                                    : "Comboio cheio"}{" "}
+                                ({selectedVehicle.occupancy}% ocupado)
+                            </p>
+                        )}
 
                         {selectedVehicle.status === VehicleStatus.Completed && (
                             <>
@@ -626,6 +629,8 @@ export default function Home() {
                                 </div>
                             </>
                         )}
+
+                        <div style={{ height: "10px" }}></div>
 
                         {selectedVehicle.status === VehicleStatus.InTransit && (
                             <>

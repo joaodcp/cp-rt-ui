@@ -306,24 +306,26 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                 min
                                                             </span>
                                                         )}
-                                                        {vehicle.occupancy ===
-                                                            1 && (
+                                                        {vehicle.occupancy <=
+                                                            50 && (
                                                             <User
                                                                 size={15}
                                                                 weight="bold"
                                                                 className="text-green-500"
                                                             />
                                                         )}
-                                                        {vehicle.occupancy ===
-                                                            2 && (
-                                                            <Users
-                                                                size={15}
-                                                                weight="bold"
-                                                                className="text-yellow-500"
-                                                            />
-                                                        )}
-                                                        {vehicle.occupancy ===
-                                                            3 && (
+                                                        {vehicle.occupancy >
+                                                            50 &&
+                                                            vehicle.occupancy <=
+                                                                80 && (
+                                                                <Users
+                                                                    size={15}
+                                                                    weight="bold"
+                                                                    className="text-yellow-500"
+                                                                />
+                                                            )}
+                                                        {vehicle.occupancy >
+                                                            80 && (
                                                             <UsersThree
                                                                 size={15}
                                                                 weight="bold"
