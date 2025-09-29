@@ -293,21 +293,28 @@ export default function Home() {
         console.log("MapClickEvent", event);
         if (event?.features?.[0]) {
             console.log(event?.features?.[0].properties.type);
+            console.log(event?.features?.[0]);
 
             if (event?.features?.[0].properties.type === "vehicle") {
                 const vehicle = event?.features?.[0]
                     .properties as EnrichedVehicle;
                 // idk why but nested objects are stringified in the event properties??
                 try {
-                    vehicle.service = JSON.parse(
-                        vehicle.service as unknown as string
-                    ) as Service;
-                    vehicle.origin = JSON.parse(
-                        vehicle.origin as unknown as string
-                    ) as Service;
-                    vehicle.destination = JSON.parse(
-                        vehicle.destination as unknown as string
-                    ) as Service;
+                    if (vehicle.service) {
+                        vehicle.service = JSON.parse(
+                            vehicle.service as unknown as string
+                        ) as Service;
+                    }
+                    if (vehicle.origin) {
+                        vehicle.origin = JSON.parse(
+                            vehicle.origin as unknown as string
+                        ) as Service;
+                    }
+                    if (vehicle.destination) {
+                        vehicle.destination = JSON.parse(
+                            vehicle.destination as unknown as string
+                        ) as Service;
+                    }
                     // vehicle.trainStops = JSON.parse(
                     //     vehicle.trainStops as unknown as string
                     // ) as TrainStop[];
@@ -315,11 +322,15 @@ export default function Home() {
                     //     vehicle.stop = JSON.parse(
                     //         vehicle.stop as unknown as string
                     //     ) as TrainStop;
-                    vehicle.units = JSON.parse(
-                        vehicle.units as unknown as string
-                    ) as string[];
+                    if (vehicle.units) {
+                        vehicle.units = JSON.parse(
+                            vehicle.units as unknown as string
+                        ) as string[];
+                    }
                     onVehicleSelected(vehicle);
-                } catch (e) {}
+                } catch (e) {
+                    console.log("Error parsing vehicle data", e);
+                }
             }
         }
     };
