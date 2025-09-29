@@ -83,7 +83,8 @@ import InfoDialog from "@/components/InfoDialog/InfoDialog";
 import CPLogo from "@/components/CPLogo";
 import ArrivingBusAnimation from "@/components/ArrivingBusAnimation/ArrivingBusAnimation";
 import BusIcon from "@/components/BusIcon";
-import { Service, TrainStop, Vehicle, VehicleStatus } from "@/types/cp";
+import { Service, TrainStop, VehicleStatus } from "@/types/cp";
+import { Vehicle } from "@/types/cp-v2";
 import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay";
 
 const unauthenticatedFetcher = (url: string) =>
@@ -245,7 +246,10 @@ export default function Home() {
             type: "Feature",
             geometry: {
                 type: "Point",
-                coordinates: [vehicle.longitude, vehicle.latitude],
+                coordinates: [
+                    parseFloat(vehicle.longitude),
+                    parseFloat(vehicle.latitude),
+                ],
             },
             properties: { ...vehicle, type: "vehicle" },
         });
@@ -269,12 +273,12 @@ export default function Home() {
                 const vehicle = event?.features?.[0].properties as Vehicle;
                 // idk why but nested objects are stringified in the event properties??
                 try {
-                    vehicle.serviceCode = JSON.parse(
-                        vehicle.serviceCode as unknown as string
-                    ) as Service;
-                    vehicle.trainStops = JSON.parse(
-                        vehicle.trainStops as unknown as string
-                    ) as TrainStop[];
+                    // vehicle.serviceCode = JSON.parse(
+                    //     vehicle.serviceCode as unknown as string
+                    // ) as Service;
+                    // vehicle.trainStops = JSON.parse(
+                    //     vehicle.trainStops as unknown as string
+                    // ) as TrainStop[];
                     // if (vehicle.stop)
                     //     vehicle.stop = JSON.parse(
                     //         vehicle.stop as unknown as string
@@ -295,7 +299,10 @@ export default function Home() {
     const handleSearchVehicleSelect = (vehicle: Vehicle) => {
         onVehicleSelected(vehicle);
         map?.flyTo({
-            center: [vehicle.longitude, vehicle.latitude],
+            center: [
+                parseFloat(vehicle.longitude),
+                parseFloat(vehicle.latitude),
+            ],
             zoom: 15,
             essential: true, // this animation is considered essential with respect to prefers-reduced-motion
         });
@@ -419,7 +426,7 @@ export default function Home() {
             >
                 <MapPinSimple size={26} />
             </TopBarButton> */}
-            {/* <TopBarButton
+            <TopBarButton
                 style={{
                     position: "absolute",
                     zIndex: 1,
@@ -430,7 +437,7 @@ export default function Home() {
                 }}
             >
                 <ChartBar size={26} />
-            </TopBarButton> */}
+            </TopBarButton>
             <TopBarButton
                 style={{
                     position: "absolute",
@@ -486,8 +493,8 @@ export default function Home() {
 
                 {showPopup && selectedVehicle && (
                     <Popup
-                        longitude={selectedVehicle.longitude}
-                        latitude={selectedVehicle.latitude}
+                        longitude={parseFloat(selectedVehicle.longitude)}
+                        latitude={parseFloat(selectedVehicle.latitude)}
                         // anchor={getPopupAnchorForHeading(
                         //     selectedVehicle.heading ?? 0
                         // )}
@@ -569,188 +576,6 @@ export default function Home() {
                                     Comboio cheio
                                 </p>
                             ))}
-
-                        {/* {!!selectedVehicle.chapa && (
-                            <>
-                                <p
-                                    style={{
-                                        position: "absolute",
-                                        top: "30.5px",
-                                        left: "12.5px",
-                                        fontWeight: "700",
-                                        fontSize: "0.8rem",
-                                        color: "gray",
-                                    }}
-                                >
-                                    CHAPA {selectedVehicle?.chapa}
-                                </p>
-                                <div style={{ height: "10px" }}></div>
-                            </>
-                        )} */}
-
-                        {!!selectedVehicle.serviceCode.designation && (
-                            <>
-                                <div style={{ height: "10px" }}></div>
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        justifyContent: "space-evenly",
-                                    }}
-                                >
-                                    <Pill color={BadgeColor.green}>
-                                        <p>
-                                            {
-                                                selectedVehicle.serviceCode
-                                                    .designation
-                                            }
-                                        </p>
-                                        <div style={{ width: "7px" }}></div>
-                                        {/* {"Direction" in selectedVehicle &&
-                                            (selectedVehicle.Direction === 0 ? (
-                                                <ArrowUp
-                                                    size={15}
-                                                    weight="bold"
-                                                />
-                                            ) : (
-                                                <ArrowDown
-                                                    size={15}
-                                                    weight="bold"
-                                                />
-                                            ))} */}
-                                    </Pill>
-                                    {/* {"tickets" in selectedVehicle && (
-                                        <Pill>
-                                            <Ticket size={20} />
-                                            <div style={{ width: "7px" }}></div>
-                                            <p>{selectedVehicle.tickets}</p>
-                                        </Pill>
-                                    )} */}
-                                </div>
-                                <div style={{ height: "10px" }}></div>
-                            </>
-                        )}
-
-                        {/* {selectedVehicle.trainStops.length > 0 && (
-                            <>
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: "10px",
-                                    }}
-                                >
-                                    <p
-                                        style={{
-                                            fontWeight: "700",
-                                            fontSize: "0.8rem",
-                                            color: "gray",
-                                        }}
-                                    >
-                                        PRÓXIMAS PARAGENS
-                                    </p>
-                                    <div style={{ height: "5px" }}></div>
-                                    {selectedVehicle.trainStops
-                                        .filter((s) => s.eta || s.arrival)
-                                        .map((stop) => {
-                                            return (
-                                                <div
-                                                    key={stop.station.code}
-                                                    style={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent:
-                                                            "space-between",
-                                                    }}
-                                                >
-                                                    <div
-                                                        style={{
-                                                            display: "flex",
-                                                            alignItems:
-                                                                "center",
-                                                            gap: "10px",
-                                                        }}
-                                                    >
-                                                        <p
-                                                            style={{
-                                                                fontWeight:
-                                                                    "bold",
-                                                                fontSize:
-                                                                    "1rem",
-                                                            }}
-                                                        >
-                                                            {
-                                                                stop.station
-                                                                    .designation
-                                                            }
-                                                        </p>
-                                                    </div>
-                                                    <div
-                                                        style={{ width: "7px" }}
-                                                    ></div>
-                                                    <div
-                                                        style={{
-                                                            display: "flex",
-                                                            alignItems:
-                                                                "center",
-                                                            gap: "5px",
-                                                        }}
-                                                    >
-                                                        <p
-                                                            style={{
-                                                                fontWeight:
-                                                                    "bold",
-                                                                color: "gray",
-                                                            }}
-                                                        >
-                                                            {stop.eta}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                </div>
-                                <div style={{ height: "10px" }}></div>
-                            </>
-                        )} */}
-
-                        {selectedVehicle.trainStops.length > 0 && (
-                            <div
-                                style={{
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    gap: "10px",
-                                }}
-                            >
-                                <h1
-                                    style={{
-                                        fontWeight: "400",
-                                        fontSize: "1rem",
-                                    }}
-                                >
-                                    {
-                                        selectedVehicle.trainStops[0].station
-                                            .designation
-                                    }
-                                </h1>
-
-                                <ArrowRight size={15} weight="bold" />
-                                <h1
-                                    style={{
-                                        fontWeight: "400",
-                                        fontSize: "1rem",
-                                    }}
-                                >
-                                    {
-                                        selectedVehicle.trainStops[
-                                            selectedVehicle.trainStops.length -
-                                                1
-                                        ].station.designation
-                                    }
-                                </h1>
-                            </div>
-                        )}
 
                         {selectedVehicle.status === VehicleStatus.Completed && (
                             <>
@@ -868,15 +693,6 @@ export default function Home() {
                                         }}
                                     >
                                         Na estação
-                                        {selectedVehicle.stationCode
-                                            ? ` (${
-                                                  selectedVehicle.trainStops.find(
-                                                      (s) =>
-                                                          s.station.code ===
-                                                          selectedVehicle.stationCode
-                                                  )?.station.designation
-                                              })`
-                                            : ""}
                                     </p>
                                 </div>
                             </>
@@ -902,16 +718,6 @@ export default function Home() {
                                         }}
                                     >
                                         A aproximar-se da próxima paragem
-                                        <br />
-                                        {selectedVehicle.stationCode
-                                            ? ` (${
-                                                  selectedVehicle.trainStops.find(
-                                                      (s) =>
-                                                          s.station.code ===
-                                                          selectedVehicle.stationCode
-                                                  )?.station.designation
-                                              })`
-                                            : ""}
                                     </p>
                                 </div>
                             </>
@@ -941,7 +747,7 @@ export default function Home() {
                             </>
                         )}
 
-                        {/* {"speed" in selectedVehicle && (
+                        {"speed" in selectedVehicle && (
                             <div
                                 style={{
                                     display: "flex",
@@ -957,18 +763,11 @@ export default function Home() {
                                     <p>km/h</p>
                                 </Pill>
                             </div>
-                        )} */}
+                        )}
 
                         <div style={{ height: "20px" }}></div>
 
-                        {/* <p>Trip ID: {selectedVehicle?.tripId}</p>
-                        <p>AU: {selectedVehicle?.AU}</p>
-                        <p>Chapa: {selectedVehicle?.chapa}</p>
-                        <p>Tickets: {selectedVehicle?.tickets}</p> */}
-                        {/* <p>Distance: {selectedVehicle?.distance}</p>
-                        <p>Speed: {selectedVehicle?.speed}</p> */}
-                        {/* <p>Time: {selectedVehicle?.time}</p> */}
-                        {"updatedAt" in selectedVehicle &&
+                        {/* {"updatedAt" in selectedVehicle &&
                             selectedVehicle.updatedAt && (
                                 <p
                                     style={{
@@ -983,7 +782,7 @@ export default function Home() {
                                         selectedVehicle.updatedAt
                                     ).toLocaleTimeString()}
                                 </p>
-                            )}
+                            )} */}
                     </Popup>
                 )}
             </WGLMap>
