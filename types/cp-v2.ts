@@ -29,3 +29,12 @@ export interface VehicleDetailed extends Vehicle {
     >;
     platforms: Record<string, string>;
 }
+
+export interface Station {
+    code: string;
+    designation: string;
+    latitude: string;
+    longitude: string;
+    region: string | null;
+    railways: string[];
+}

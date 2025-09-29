@@ -84,7 +84,7 @@ import CPLogo from "@/components/CPLogo";
 import ArrivingBusAnimation from "@/components/ArrivingBusAnimation/ArrivingBusAnimation";
 import BusIcon from "@/components/BusIcon";
 import { Service, TrainStop, VehicleStatus } from "@/types/cp";
-import { Vehicle } from "@/types/cp-v2";
+import { Station, Vehicle } from "@/types/cp-v2";
 import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay";
 import { formatDuration } from "@/utils/time";
 
@@ -185,9 +185,14 @@ export default function Home() {
 
     const { data: newVehicles } = useSWR<{
         vehicles: Vehicle[];
-        updated_on: number;
     }>("/api/vehicles", unauthenticatedFetcher, {
         refreshInterval: 5_000,
+    });
+
+    const { data: stations } = useSWR<{
+        stations: Station[];
+    }>("/api/stations", unauthenticatedFetcher, {
+        refreshInterval: 240_000,
     });
 
     useEffect(() => {
@@ -675,6 +680,16 @@ export default function Home() {
                                         }}
                                     >
                                         Na estação inicial
+                                        {stations?.stations &&
+                                        selectedVehicle.lastStation
+                                            ? ` (${
+                                                  stations.stations.find(
+                                                      (s) =>
+                                                          s.code ===
+                                                          selectedVehicle.lastStation
+                                                  )?.designation
+                                              })`
+                                            : ""}
                                     </p>
                                 </div>
                             </>
@@ -699,6 +714,16 @@ export default function Home() {
                                         }}
                                     >
                                         Na estação
+                                        {stations?.stations &&
+                                        selectedVehicle.lastStation
+                                            ? ` (${
+                                                  stations.stations.find(
+                                                      (s) =>
+                                                          s.code ===
+                                                          selectedVehicle.lastStation
+                                                  )?.designation
+                                              })`
+                                            : ""}
                                     </p>
                                 </div>
                             </>
@@ -723,7 +748,17 @@ export default function Home() {
                                             textAlign: "center",
                                         }}
                                     >
-                                        A aproximar-se da próxima paragem
+                                        A aproximar-se da próxima estação
+                                        {stations?.stations &&
+                                        selectedVehicle.lastStation
+                                            ? ` (${
+                                                  stations.stations.find(
+                                                      (s) =>
+                                                          s.code ===
+                                                          selectedVehicle.lastStation
+                                                  )?.designation
+                                              })`
+                                            : ""}
                                     </p>
                                 </div>
                             </>
