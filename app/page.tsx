@@ -808,8 +808,8 @@ export default function Home() {
 
                         <div style={{ height: "20px" }}></div>
 
-                        {/* {"updatedAt" in selectedVehicle &&
-                            selectedVehicle.updatedAt && (
+                        {selectedVehicle.timestamp &&
+                            selectedVehicle.timestamp && (
                                 <p
                                     style={{
                                         color: "gray",
@@ -820,10 +820,10 @@ export default function Home() {
                                 >
                                     Atualizado às:{" "}
                                     {new Date(
-                                        selectedVehicle.updatedAt
+                                        selectedVehicle.timestamp
                                     ).toLocaleTimeString()}
                                 </p>
-                            )} */}
+                            )}
                     </Popup>
                 )}
             </WGLMap>
