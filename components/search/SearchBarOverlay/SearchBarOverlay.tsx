@@ -86,6 +86,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
         const filtered = vehicles.filter((vehicle) => {
             const query = searchQuery.toLowerCase();
+            if (vehicle.status === "CANCELLED") return false;
             return (
                 vehicle.trainNumber?.toString().toLowerCase().includes(query) ||
                 vehicle.serviceCode?.designation
