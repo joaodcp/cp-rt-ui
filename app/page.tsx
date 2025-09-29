@@ -567,7 +567,7 @@ export default function Home() {
                             </p>
                         )}
 
-                        {selectedVehicle.occupancy && (
+                        {!!selectedVehicle.occupancy && (
                             <p
                                 className={`font-bold ${
                                     selectedVehicle.occupancy < 50
