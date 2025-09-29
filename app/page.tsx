@@ -87,6 +87,8 @@ import { Service, TrainStop, VehicleStatus } from "@/types/cp";
 import { Station, Vehicle } from "@/types/cp-v2";
 import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay";
 import { formatDuration } from "@/utils/time";
+import { Train } from "lucide-react";
+import { getFormattedFleetNumber } from "@/utils/fleet";
 
 const unauthenticatedFetcher = (url: string) =>
     fetch(url).then((res) => res.json());
@@ -102,7 +104,7 @@ interface GeoJSONFeature {
         coordinates: number[] | number[][];
         type: string;
     };
-    properties?: Vehicle & { type: string };
+    properties?: (Vehicle & { type: string }) | (Station & { type: string });
 }
 
 export default function Home() {
@@ -242,6 +244,22 @@ export default function Home() {
 
     // if (error) return <div>Error</div>;
 
+    // const stationsGeoJSON: GeoJSON = {
+    //     type: "FeatureCollection",
+    //     features:
+    //         stations?.stations.map((station) => ({
+    //             type: "Feature",
+    //             geometry: {
+    //                 type: "Point",
+    //                 coordinates: [
+    //                     parseFloat(station.longitude),
+    //                     parseFloat(station.latitude),
+    //                 ],
+    //             },
+    //             properties: { ...station, type: "station" },
+    //         })) || [],
+    // };
+
     const vehiclesGeoJSON: GeoJSON = {
         type: "FeatureCollection",
         features: [],
@@ -289,6 +307,9 @@ export default function Home() {
                     //     vehicle.stop = JSON.parse(
                     //         vehicle.stop as unknown as string
                     //     ) as TrainStop;
+                    vehicle.units = JSON.parse(
+                        vehicle.units as unknown as string
+                    ) as string[];
                     onVehicleSelected(vehicle);
                 } catch (e) {}
             }
@@ -358,6 +379,18 @@ export default function Home() {
             "circle-stroke-color": "#ffffff",
         },
     };
+
+    // const stationsLayerStyle: CircleLayer = {
+    //     source: "stations",
+    //     id: "station",
+    //     type: "circle",
+    //     paint: {
+    //         "circle-color": "#1E90FF",
+    //         "circle-radius": 3,
+    //         "circle-stroke-width": 2,
+    //         "circle-stroke-color": "#ffffff",
+    //     },
+    // };
 
     const selectedLineLayerStyle: LineLayer = {
         source: "line",
@@ -497,6 +530,10 @@ export default function Home() {
                     <Layer {...vehiclesLayerStyle}></Layer>
                 </Source>
 
+                {/* <Source id="stations" type="geojson" data={stationsGeoJSON}>
+                    <Layer {...stationsLayerStyle}></Layer>
+                </Source> */}
+
                 {showPopup && selectedVehicle && (
                     <Popup
                         longitude={parseFloat(selectedVehicle.longitude)}
@@ -508,17 +545,34 @@ export default function Home() {
                         offset={20}
                         onClose={handlePopupClose}
                     >
-                        <h1
-                            style={{
-                                position: "absolute",
-                                top: "12.5px",
-                                left: "12.5px",
-                                fontWeight: "900",
-                                fontSize: "1.1rem",
-                            }}
-                        >
-                            Comboio {selectedVehicle?.trainNumber}
-                        </h1>
+                        <div className="flex items-start absolute top-[12.5px] left-[12.5px] justify-between w-[290px]">
+                            <h1
+                                style={{
+                                    fontWeight: "900",
+                                    fontSize: "1.1rem",
+                                }}
+                            >
+                                Comboio {selectedVehicle?.trainNumber}
+                            </h1>
+
+                            {selectedVehicle?.units &&
+                                selectedVehicle?.units.length > 0 && (
+                                    <Pill color={BadgeColor.green} wrapping>
+                                        <div className="flex items-center gap-1 pr-2 pl-2">
+                                            <Train size={15} />
+                                            <p>
+                                                {selectedVehicle?.units
+                                                    .map((u) =>
+                                                        getFormattedFleetNumber(
+                                                            u
+                                                        )
+                                                    )
+                                                    .join(" + ")}
+                                            </p>
+                                        </div>
+                                    </Pill>
+                                )}
+                        </div>
 
                         {selectedVehicle.delay == 0 && (
                             <p
