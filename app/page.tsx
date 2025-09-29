@@ -84,7 +84,7 @@ import CPLogo from "@/components/CPLogo";
 import ArrivingBusAnimation from "@/components/ArrivingBusAnimation/ArrivingBusAnimation";
 import BusIcon from "@/components/BusIcon";
 import { Service, TrainStop, VehicleStatus } from "@/types/cp";
-import { Station, Vehicle } from "@/types/cp-v2";
+import { Station, EnrichedVehicle } from "@/types/cp-v2";
 import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay";
 import { formatDuration } from "@/utils/time";
 import { Train } from "lucide-react";
@@ -104,7 +104,9 @@ interface GeoJSONFeature {
         coordinates: number[] | number[][];
         type: string;
     };
-    properties?: (Vehicle & { type: string }) | (Station & { type: string });
+    properties?:
+        | (EnrichedVehicle & { type: string })
+        | (Station & { type: string });
 }
 
 export default function Home() {
@@ -121,12 +123,11 @@ export default function Home() {
 
     const { theme, resolvedTheme, setTheme } = useTheme();
 
-    const [vehicles, _setVehicles] = useState<Vehicle[] | null>(null);
+    const [vehicles, _setVehicles] = useState<EnrichedVehicle[] | null>(null);
 
     const [showPopup, setShowPopup] = useState<boolean>(true);
-    const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(
-        null
-    );
+    const [selectedVehicle, setSelectedVehicle] =
+        useState<EnrichedVehicle | null>(null);
 
     const [cursor, setCursor] = useState<string>("auto");
 
@@ -180,13 +181,13 @@ export default function Home() {
     };
 
     const vehiclesRef = useRef(vehicles);
-    const setVehicles = (data: Vehicle[] | null) => {
+    const setVehicles = (data: EnrichedVehicle[] | null) => {
         vehiclesRef.current = data;
         _setVehicles(data);
     };
 
     const { data: newVehicles } = useSWR<{
-        vehicles: Vehicle[];
+        vehicles: EnrichedVehicle[];
     }>("/api/vehicles", unauthenticatedFetcher, {
         refreshInterval: 5_000,
     });
@@ -279,7 +280,7 @@ export default function Home() {
         });
     });
 
-    function onVehicleSelected(vehicle: Vehicle) {
+    function onVehicleSelected(vehicle: EnrichedVehicle) {
         console.log("SETTING VEHICLE:", vehicle);
         setSelectedVehicle(vehicle);
         console.log(selectedVehicle);
@@ -294,12 +295,19 @@ export default function Home() {
             console.log(event?.features?.[0].properties.type);
 
             if (event?.features?.[0].properties.type === "vehicle") {
-                const vehicle = event?.features?.[0].properties as Vehicle;
+                const vehicle = event?.features?.[0]
+                    .properties as EnrichedVehicle;
                 // idk why but nested objects are stringified in the event properties??
                 try {
-                    // vehicle.serviceCode = JSON.parse(
-                    //     vehicle.serviceCode as unknown as string
-                    // ) as Service;
+                    vehicle.service = JSON.parse(
+                        vehicle.service as unknown as string
+                    ) as Service;
+                    vehicle.origin = JSON.parse(
+                        vehicle.origin as unknown as string
+                    ) as Service;
+                    vehicle.destination = JSON.parse(
+                        vehicle.destination as unknown as string
+                    ) as Service;
                     // vehicle.trainStops = JSON.parse(
                     //     vehicle.trainStops as unknown as string
                     // ) as TrainStop[];
@@ -323,7 +331,7 @@ export default function Home() {
         setSelectedVehicle(null);
     };
 
-    const handleSearchVehicleSelect = (vehicle: Vehicle) => {
+    const handleSearchVehicleSelect = (vehicle: EnrichedVehicle) => {
         onVehicleSelected(vehicle);
         map?.flyTo({
             center: [
@@ -643,6 +651,84 @@ export default function Home() {
                             </p>
                         )}
 
+                        <div className="flex items-center justify-evenly p-2">
+                            {!!selectedVehicle.service.designation && (
+                                <>
+                                    <div style={{ height: "5px" }}></div>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            justifyContent: "space-evenly",
+                                        }}
+                                    >
+                                        <Pill color={BadgeColor.subtleGreen}>
+                                            <p>
+                                                {
+                                                    selectedVehicle.service
+                                                        .designation
+                                                }
+                                            </p>
+                                        </Pill>
+                                    </div>
+                                    <div style={{ height: "10px" }}></div>
+                                </>
+                            )}
+                            {"speed" in selectedVehicle && (
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <Pill>
+                                        <Gauge size={15} />
+
+                                        <div style={{ width: "7px" }}></div>
+                                        {selectedVehicle?.speed.toFixed(1)}
+                                        <div style={{ width: "7px" }}></div>
+                                        <p>km/h</p>
+                                    </Pill>
+                                </div>
+                            )}
+                        </div>
+
+                        {selectedVehicle.origin &&
+                            selectedVehicle.origin.designation &&
+                            selectedVehicle.destination &&
+                            selectedVehicle.destination.designation && (
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: "10px",
+                                    }}
+                                >
+                                    <h1
+                                        style={{
+                                            fontWeight: "400",
+                                            fontSize: "1rem",
+                                        }}
+                                    >
+                                        {selectedVehicle.origin.designation}
+                                    </h1>
+
+                                    <ArrowRight size={15} weight="bold" />
+                                    <h1
+                                        style={{
+                                            fontWeight: "400",
+                                            fontSize: "1rem",
+                                        }}
+                                    >
+                                        {
+                                            selectedVehicle.destination
+                                                .designation
+                                        }
+                                    </h1>
+                                </div>
+                            )}
+
                         {selectedVehicle.status === VehicleStatus.Completed && (
                             <>
                                 <div style={{ height: "5px" }}></div>
@@ -843,24 +929,6 @@ export default function Home() {
                                     </p>
                                 </div>
                             </>
-                        )}
-
-                        {"speed" in selectedVehicle && (
-                            <div
-                                style={{
-                                    display: "flex",
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <Pill>
-                                    <Gauge size={15} />
-
-                                    <div style={{ width: "7px" }}></div>
-                                    {selectedVehicle?.speed.toFixed(1)}
-                                    <div style={{ width: "7px" }}></div>
-                                    <p>km/h</p>
-                                </Pill>
-                            </div>
                         )}
 
                         <div style={{ height: "20px" }}></div>

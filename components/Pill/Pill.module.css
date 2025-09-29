@@ -54,3 +54,8 @@
     background-color: #388344;
     color: #fff;
 }
+
+#subtleGreen {
+    background-color: rgba(56, 131, 68, 0.35);
+    color: #388344;
+}

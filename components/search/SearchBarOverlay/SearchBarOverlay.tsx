@@ -90,12 +90,10 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
             if (vehicle.status === "CANCELLED") return false;
             return (
                 vehicle.trainNumber?.toString().toLowerCase().includes(query) ||
-                vehicle.serviceCode?.designation
-                    ?.toLowerCase()
-                    .includes(query) ||
-                vehicle.trainStops?.some((stop: any) =>
-                    stop.station.designation.toLowerCase().includes(query)
-                )
+                vehicle.serviceCode?.designation?.toLowerCase().includes(query)
+                // || vehicle.trainStops?.some((stop: any) =>
+                //     stop.station.designation.toLowerCase().includes(query)
+                // )
             );
         });
 
@@ -254,31 +252,29 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                         )}
                                                     </div>
 
-                                                    {vehicle.trainStops
-                                                        ?.length > 0 && (
-                                                        <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
-                                                            {
-                                                                vehicle
-                                                                    .trainStops[0]
-                                                                    .station
-                                                                    .designation
-                                                            }
-                                                            <ArrowRight
-                                                                size={15}
-                                                                weight="bold"
-                                                            />
-                                                            {
-                                                                vehicle
-                                                                    .trainStops[
+                                                    {vehicle.origin &&
+                                                        vehicle.origin
+                                                            .designation &&
+                                                        vehicle.destination &&
+                                                        vehicle.destination
+                                                            .designation && (
+                                                            <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
+                                                                {
                                                                     vehicle
-                                                                        .trainStops
-                                                                        .length -
-                                                                        1
-                                                                ].station
-                                                                    .designation
-                                                            }
-                                                        </p>
-                                                    )}
+                                                                        .origin
+                                                                        .designation
+                                                                }
+                                                                <ArrowRight
+                                                                    size={15}
+                                                                    weight="bold"
+                                                                />
+                                                                {
+                                                                    vehicle
+                                                                        .destination
+                                                                        .designation
+                                                                }
+                                                            </p>
+                                                        )}
 
                                                     {/* Delay info */}
                                                     <div className="mt-1 flex items-center gap-2">

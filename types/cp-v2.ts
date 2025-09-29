@@ -17,6 +17,21 @@ export interface Vehicle {
     units: string[];
 }
 
+export interface EnrichedVehicle extends Vehicle {
+    service: {
+        code: string;
+        designation: string;
+    };
+    origin: {
+        code: string;
+        designation: string;
+    };
+    destination: {
+        code: string;
+        designation: string;
+    };
+}
+
 export interface VehicleDetailed extends Vehicle {
     stops: Record<
         string,
