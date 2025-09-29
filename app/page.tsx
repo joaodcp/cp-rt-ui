@@ -652,27 +652,30 @@ export default function Home() {
                         )}
 
                         <div className="flex items-center justify-evenly p-2">
-                            {!!selectedVehicle.service.designation && (
-                                <>
-                                    <div style={{ height: "5px" }}></div>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            justifyContent: "space-evenly",
-                                        }}
-                                    >
-                                        <Pill color={BadgeColor.subtleGreen}>
-                                            <p>
-                                                {
-                                                    selectedVehicle.service
-                                                        .designation
-                                                }
-                                            </p>
-                                        </Pill>
-                                    </div>
-                                    <div style={{ height: "10px" }}></div>
-                                </>
-                            )}
+                            {selectedVehicle.service &&
+                                selectedVehicle.service.designation && (
+                                    <>
+                                        <div style={{ height: "5px" }}></div>
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "space-evenly",
+                                            }}
+                                        >
+                                            <Pill
+                                                color={BadgeColor.subtleGreen}
+                                            >
+                                                <p>
+                                                    {
+                                                        selectedVehicle.service
+                                                            .designation
+                                                    }
+                                                </p>
+                                            </Pill>
+                                        </div>
+                                        <div style={{ height: "10px" }}></div>
+                                    </>
+                                )}
                             {"speed" in selectedVehicle && (
                                 <div
                                     style={{
