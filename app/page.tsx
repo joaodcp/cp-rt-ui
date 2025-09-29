@@ -865,22 +865,36 @@ export default function Home() {
 
                         <div style={{ height: "20px" }}></div>
 
-                        {selectedVehicle.timestamp &&
-                            selectedVehicle.timestamp && (
+                        <div>
+                            {selectedVehicle.timestamp &&
+                                selectedVehicle.timestamp && (
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            position: "absolute",
+                                            bottom: "2px",
+                                            left: "10px",
+                                        }}
+                                    >
+                                        Atualizado às:{" "}
+                                        {new Date(
+                                            selectedVehicle.timestamp
+                                        ).toLocaleTimeString()}
+                                    </p>
+                                )}
+                            {selectedVehicle.source && (
                                 <p
                                     style={{
                                         color: "gray",
                                         position: "absolute",
                                         bottom: "2px",
-                                        left: "10px",
+                                        right: "10px",
                                     }}
                                 >
-                                    Atualizado às:{" "}
-                                    {new Date(
-                                        selectedVehicle.timestamp
-                                    ).toLocaleTimeString()}
+                                    via {selectedVehicle.source}
                                 </p>
                             )}
+                        </div>
                     </Popup>
                 )}
             </WGLMap>
