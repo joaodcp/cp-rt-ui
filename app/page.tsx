@@ -635,7 +635,7 @@ export default function Home() {
                             </>
                         )}
 
-                        <div style={{ height: "10px" }}></div>
+                        <div style={{ height: "5px" }}></div>
 
                         {selectedVehicle.status === VehicleStatus.InTransit && (
                             <>
