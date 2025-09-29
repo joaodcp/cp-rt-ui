@@ -300,10 +300,12 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                         {vehicle.delay < 0 && (
                                                             <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
                                                                 Adiantado{" "}
-                                                                {Math.abs(
-                                                                    vehicle.delay
+                                                                {formatDuration(
+                                                                    Math.abs(
+                                                                        vehicle.delay
+                                                                    ),
+                                                                    true
                                                                 )}
-                                                                min
                                                             </span>
                                                         )}
                                                         {vehicle.occupancy &&

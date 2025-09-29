@@ -562,8 +562,11 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Adiantado {Math.abs(selectedVehicle.delay)}{" "}
-                                minuto{selectedVehicle.delay == -1 ? "" : "s"}
+                                Adiantado{" "}
+                                {formatDuration(
+                                    Math.abs(selectedVehicle.delay),
+                                    true
+                                )}
                             </p>
                         )}
 
