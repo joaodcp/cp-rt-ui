@@ -541,7 +541,8 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Atrasado {formatDuration(selectedVehicle.delay)}
+                                Atrasado{" "}
+                                {formatDuration(selectedVehicle.delay, true)}
                             </p>
                         )}
 

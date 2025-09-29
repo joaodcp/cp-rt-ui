@@ -292,7 +292,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                             <span className="text-xs font-medium text-red-400">
                                                                 Atrasado{" "}
                                                                 {formatDuration(
-                                                                    vehicle.delay
+                                                                    vehicle.delay,
+                                                                    true
                                                                 )}
                                                             </span>
                                                         )}
