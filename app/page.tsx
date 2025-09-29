@@ -687,7 +687,7 @@ export default function Home() {
                                                       (s) =>
                                                           s.code ===
                                                           selectedVehicle.lastStation
-                                                  )?.designation
+                                                  )?.designation || ""
                                               })`
                                             : ""}
                                     </p>
@@ -721,7 +721,7 @@ export default function Home() {
                                                       (s) =>
                                                           s.code ===
                                                           selectedVehicle.lastStation
-                                                  )?.designation
+                                                  )?.designation || ""
                                               })`
                                             : ""}
                                     </p>
@@ -756,7 +756,7 @@ export default function Home() {
                                                       (s) =>
                                                           s.code ===
                                                           selectedVehicle.lastStation
-                                                  )?.designation
+                                                  )?.designation || ""
                                               })`
                                             : ""}
                                     </p>
