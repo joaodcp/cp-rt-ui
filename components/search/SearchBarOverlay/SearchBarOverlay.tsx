@@ -306,16 +306,18 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                 min
                                                             </span>
                                                         )}
-                                                        {vehicle.occupancy <=
-                                                            50 && (
-                                                            <User
-                                                                size={15}
-                                                                weight="bold"
-                                                                className="text-green-500"
-                                                            />
-                                                        )}
-                                                        {vehicle.occupancy >
-                                                            50 &&
+                                                        {vehicle.occupancy &&
+                                                            vehicle.occupancy <=
+                                                                50 && (
+                                                                <User
+                                                                    size={15}
+                                                                    weight="bold"
+                                                                    className="text-green-500"
+                                                                />
+                                                            )}
+                                                        {vehicle.occupancy &&
+                                                            vehicle.occupancy >
+                                                                50 &&
                                                             vehicle.occupancy <=
                                                                 80 && (
                                                                 <Users
@@ -324,14 +326,15 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                     className="text-yellow-500"
                                                                 />
                                                             )}
-                                                        {vehicle.occupancy >
-                                                            80 && (
-                                                            <UsersThree
-                                                                size={15}
-                                                                weight="bold"
-                                                                className="text-red-500"
-                                                            />
-                                                        )}
+                                                        {vehicle.occupancy &&
+                                                            vehicle.occupancy >
+                                                                80 && (
+                                                                <UsersThree
+                                                                    size={15}
+                                                                    weight="bold"
+                                                                    className="text-red-500"
+                                                                />
+                                                            )}
                                                     </div>
                                                 </div>
                                             </div>
