@@ -9,6 +9,7 @@ import {
     Users,
     UsersThree,
 } from "@phosphor-icons/react";
+import { formatDuration } from "@/utils/time";
 
 // Add keyframe animations
 const styles = `
@@ -290,8 +291,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                         {vehicle.delay > 0 && (
                                                             <span className="text-xs font-medium text-red-400">
                                                                 Atrasado{" "}
-                                                                {vehicle.delay}
-                                                                min
+                                                                {formatDuration(
+                                                                    vehicle.delay
+                                                                )}
                                                             </span>
                                                         )}
                                                         {vehicle.delay < 0 && (

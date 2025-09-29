@@ -86,6 +86,7 @@ import BusIcon from "@/components/BusIcon";
 import { Service, TrainStop, VehicleStatus } from "@/types/cp";
 import { Vehicle } from "@/types/cp-v2";
 import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay";
+import { formatDuration } from "@/utils/time";
 
 const unauthenticatedFetcher = (url: string) =>
     fetch(url).then((res) => res.json());
@@ -540,8 +541,7 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Atrasado {selectedVehicle.delay} minuto
-                                {selectedVehicle.delay == 1 ? "" : "s"}
+                                Atrasado {formatDuration(selectedVehicle.delay)}
                             </p>
                         )}
 
