@@ -1,5 +1,5 @@
 export const dynamic = "force-static";
-export const revalidate = 10;
+export const revalidate = 5;
 
 export async function GET(request: Request) {
     const res = await fetch("https://cp.jdcp.workers.dev?excludes=completed");
