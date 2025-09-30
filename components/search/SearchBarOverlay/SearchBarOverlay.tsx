@@ -58,7 +58,7 @@ if (typeof document !== "undefined") {
 interface SearchOverlayProps {
     isOpen: boolean;
     onClose: () => void;
-    vehicles?: EnrichedVehicle[]; // Replace with your Vehicle type
+    vehicles?: EnrichedVehicle[];
     onVehicleSelect?: (vehicle: EnrichedVehicle) => void;
 }
 
@@ -69,7 +69,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
     onVehicleSelect,
 }) => {
     const [searchQuery, setSearchQuery] = useState("");
-    const [filteredResults, setFilteredResults] = useState<any[]>([]);
+    const [filteredResults, setFilteredResults] = useState<EnrichedVehicle[]>(
+        []
+    );
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -126,6 +128,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
         }
 
         if (e.key === "Enter" && filteredResults.length > 0) {
+            e.preventDefault();
+            e.stopPropagation();
             handleVehicleClick(filteredResults[0]);
         }
     };
