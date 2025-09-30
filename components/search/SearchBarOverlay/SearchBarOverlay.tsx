@@ -10,6 +10,8 @@ import {
     UsersThree,
 } from "@phosphor-icons/react";
 import { formatDuration } from "@/utils/time";
+import { EnrichedVehicle } from "@/types/cp-v2";
+import { getFormattedFleetNumber } from "@/utils/fleet";
 
 // Add keyframe animations
 const styles = `
@@ -56,8 +58,8 @@ if (typeof document !== "undefined") {
 interface SearchOverlayProps {
     isOpen: boolean;
     onClose: () => void;
-    vehicles?: any[]; // Replace with your Vehicle type
-    onVehicleSelect?: (vehicle: any) => void;
+    vehicles?: EnrichedVehicle[]; // Replace with your Vehicle type
+    onVehicleSelect?: (vehicle: EnrichedVehicle) => void;
 }
 
 const SearchOverlay: React.FC<SearchOverlayProps> = ({
@@ -90,7 +92,12 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
             if (vehicle.status === "CANCELLED") return false;
             return (
                 vehicle.trainNumber?.toString().toLowerCase().includes(query) ||
-                vehicle.serviceCode?.designation?.toLowerCase().includes(query)
+                vehicle.service?.designation?.toLowerCase().includes(query) ||
+                vehicle.origin?.designation?.toLowerCase().includes(query) ||
+                vehicle.destination?.designation
+                    ?.toLowerCase()
+                    .includes(query) ||
+                vehicle.units.includes(query)
                 // || vehicle.trainStops?.some((stop: any) =>
                 //     stop.station.designation.toLowerCase().includes(query)
                 // )
@@ -188,163 +195,188 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                     <div className="px-4 pb-4 overflow-scroll h-[calc(100vh-120px)]">
                         <div className="max-w-2xl mx-auto">
                             <div className="space-y-3 mt-4">
-                                {filteredResults.map((vehicle, index) => (
-                                    <div
-                                        key={vehicle.trainNumber}
-                                        onClick={() =>
-                                            handleVehicleClick(vehicle)
-                                        }
-                                        className={`bg-[#1e1e1e] backdrop-blur-sm rounded-2xl p-4 cursor-pointer 
+                                {filteredResults.map(
+                                    (vehicle: EnrichedVehicle, index) => (
+                                        <div
+                                            key={vehicle.trainNumber}
+                                            onClick={() =>
+                                                handleVehicleClick(vehicle)
+                                            }
+                                            className={`bg-[#1e1e1e] backdrop-blur-sm rounded-2xl p-4 cursor-pointer 
                               hover:bg-[#2e2e2e] dark:hover:bg-gray-800 hover:shadow-lg 
                                transition-all duration-200 hover:scale-[1.02]
                               animate-in slide-in-from-top-2 fade-in`}
-                                        style={{
-                                            animationDelay: `${index * 50}ms`,
-                                            animationDuration: "300ms",
-                                            animationFillMode: "both",
-                                        }}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center space-x-3">
-                                                {/* Train icon */}
-                                                <div
-                                                    className={`p-2 rounded-full ${
-                                                        vehicle.status ===
-                                                        "CANCELLED"
-                                                            ? "bg-red-900/30"
-                                                            : vehicle.status ===
-                                                              "COMPLETED"
-                                                            ? "bg-gray-700"
-                                                            : "bg-green-900/30"
-                                                    }`}
-                                                >
-                                                    <Train
-                                                        size={20}
-                                                        className={`${
+                                            style={{
+                                                animationDelay: `${
+                                                    index * 50
+                                                }ms`,
+                                                animationDuration: "300ms",
+                                                animationFillMode: "both",
+                                            }}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    {/* Train icon */}
+                                                    <div
+                                                        className={`p-2 rounded-full ${
                                                             vehicle.status ===
                                                             "CANCELLED"
-                                                                ? "text-red-400"
+                                                                ? "bg-red-900/30"
                                                                 : vehicle.status ===
                                                                   "COMPLETED"
-                                                                ? "text-gray-400"
-                                                                : "text-green-400"
+                                                                ? "bg-gray-700"
+                                                                : "bg-green-900/30"
                                                         }`}
-                                                    />
-                                                </div>
-
-                                                {/* Train info */}
-                                                <div className="flex-1">
-                                                    <div className="flex items-center space-x-2">
-                                                        <h3 className="font-bold text-gray-100 text-lg">
-                                                            {
-                                                                vehicle.trainNumber
-                                                            }
-                                                        </h3>
-                                                        {vehicle.serviceCode
-                                                            ?.designation && (
-                                                            <span className="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/30 rounded-full">
-                                                                {
-                                                                    vehicle
-                                                                        .serviceCode
-                                                                        .designation
-                                                                }
-                                                            </span>
-                                                        )}
+                                                    >
+                                                        <Train
+                                                            size={20}
+                                                            className={`${
+                                                                vehicle.status ===
+                                                                "CANCELLED"
+                                                                    ? "text-red-400"
+                                                                    : vehicle.status ===
+                                                                      "COMPLETED"
+                                                                    ? "text-gray-400"
+                                                                    : "text-green-400"
+                                                            }`}
+                                                        />
                                                     </div>
 
-                                                    {vehicle.origin &&
-                                                        vehicle.origin
-                                                            .designation &&
-                                                        vehicle.destination &&
-                                                        vehicle.destination
-                                                            .designation && (
-                                                            <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
+                                                    {/* Train info */}
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2">
+                                                            <h3 className="font-bold text-gray-100 text-lg">
                                                                 {
-                                                                    vehicle
-                                                                        .origin
-                                                                        .designation
+                                                                    vehicle.trainNumber
                                                                 }
-                                                                <ArrowRight
-                                                                    size={15}
-                                                                    weight="bold"
-                                                                />
-                                                                {
-                                                                    vehicle
-                                                                        .destination
-                                                                        .designation
-                                                                }
+                                                            </h3>
+                                                            <p className="ml-auto text-xs text-gray-400">
+                                                                {vehicle.units
+                                                                    .map((u) =>
+                                                                        getFormattedFleetNumber(
+                                                                            u
+                                                                        )
+                                                                    )
+                                                                    .join(
+                                                                        " + "
+                                                                    )}
                                                             </p>
-                                                        )}
+                                                            {vehicle.service
+                                                                ?.designation && (
+                                                                <span className="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/30 rounded-full">
+                                                                    {
+                                                                        vehicle
+                                                                            .service
+                                                                            .designation
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                        </div>
 
-                                                    {/* Delay info */}
-                                                    <div className="mt-1 flex items-center gap-2">
-                                                        {vehicle.delay ===
-                                                            0 && (
-                                                            <span className="text-xs font-medium text-green-400">
-                                                                A horas
-                                                            </span>
-                                                        )}
-                                                        {vehicle.delay > 0 && (
-                                                            <span className="text-xs font-medium text-red-400">
-                                                                Atrasado{" "}
-                                                                {formatDuration(
-                                                                    vehicle.delay,
-                                                                    true
+                                                        {vehicle.origin &&
+                                                            vehicle.origin
+                                                                .designation &&
+                                                            vehicle.destination &&
+                                                            vehicle.destination
+                                                                .designation && (
+                                                                <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
+                                                                    {
+                                                                        vehicle
+                                                                            .origin
+                                                                            .designation
+                                                                    }
+                                                                    <ArrowRight
+                                                                        size={
+                                                                            15
+                                                                        }
+                                                                        weight="bold"
+                                                                    />
+                                                                    {
+                                                                        vehicle
+                                                                            .destination
+                                                                            .designation
+                                                                    }
+                                                                </p>
+                                                            )}
+
+                                                        {/* Delay info */}
+                                                        <div className="mt-1 flex items-center gap-2">
+                                                            {vehicle.delay ===
+                                                                0 && (
+                                                                <span className="text-xs font-medium text-green-400">
+                                                                    A horas
+                                                                </span>
+                                                            )}
+                                                            {vehicle.delay >
+                                                                0 && (
+                                                                <span className="text-xs font-medium text-red-400">
+                                                                    Atrasado{" "}
+                                                                    {formatDuration(
+                                                                        vehicle.delay,
+                                                                        true
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                            {vehicle.delay <
+                                                                0 && (
+                                                                <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                                                    Adiantado{" "}
+                                                                    {formatDuration(
+                                                                        Math.abs(
+                                                                            vehicle.delay
+                                                                        ),
+                                                                        true
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                            {vehicle.occupancy &&
+                                                                vehicle.occupancy <=
+                                                                    50 && (
+                                                                    <User
+                                                                        size={
+                                                                            15
+                                                                        }
+                                                                        weight="bold"
+                                                                        className="text-green-500"
+                                                                    />
                                                                 )}
-                                                            </span>
-                                                        )}
-                                                        {vehicle.delay < 0 && (
-                                                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                                                                Adiantado{" "}
-                                                                {formatDuration(
-                                                                    Math.abs(
-                                                                        vehicle.delay
-                                                                    ),
-                                                                    true
+                                                            {vehicle.occupancy &&
+                                                                vehicle.occupancy >
+                                                                    50 &&
+                                                                vehicle.occupancy <=
+                                                                    80 && (
+                                                                    <Users
+                                                                        size={
+                                                                            15
+                                                                        }
+                                                                        weight="bold"
+                                                                        className="text-yellow-500"
+                                                                    />
                                                                 )}
-                                                            </span>
-                                                        )}
-                                                        {vehicle.occupancy &&
-                                                            vehicle.occupancy <=
-                                                                50 && (
-                                                                <User
-                                                                    size={15}
-                                                                    weight="bold"
-                                                                    className="text-green-500"
-                                                                />
-                                                            )}
-                                                        {vehicle.occupancy &&
-                                                            vehicle.occupancy >
-                                                                50 &&
-                                                            vehicle.occupancy <=
-                                                                80 && (
-                                                                <Users
-                                                                    size={15}
-                                                                    weight="bold"
-                                                                    className="text-yellow-500"
-                                                                />
-                                                            )}
-                                                        {vehicle.occupancy &&
-                                                            vehicle.occupancy >
-                                                                80 && (
-                                                                <UsersThree
-                                                                    size={15}
-                                                                    weight="bold"
-                                                                    className="text-red-500"
-                                                                />
-                                                            )}
+                                                            {vehicle.occupancy &&
+                                                                vehicle.occupancy >
+                                                                    80 && (
+                                                                    <UsersThree
+                                                                        size={
+                                                                            15
+                                                                        }
+                                                                        weight="bold"
+                                                                        className="text-red-500"
+                                                                    />
+                                                                )}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Right chevron */}
-                                            <CaretRight
-                                                size={20}
-                                                className="text-gray-500 flex-shrink-0"
-                                            />
+                                                {/* Right chevron */}
+                                                <CaretRight
+                                                    size={20}
+                                                    className="text-gray-500 flex-shrink-0"
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                )}
                             </div>
                         </div>
                     </div>
