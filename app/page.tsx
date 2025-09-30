@@ -647,16 +647,16 @@ export default function Home() {
                         {!!selectedVehicle.occupancy && (
                             <p
                                 className={`font-bold ${
-                                    selectedVehicle.occupancy < 50
+                                    selectedVehicle.occupancy < 65
                                         ? "text-green-500"
-                                        : selectedVehicle.occupancy < 80
+                                        : selectedVehicle.occupancy < 85
                                         ? "text-yellow-500"
                                         : "text-red-500"
                                 }`}
                             >
-                                {selectedVehicle.occupancy < 50
+                                {selectedVehicle.occupancy < 65
                                     ? "Muitos lugares disponíveis"
-                                    : selectedVehicle.occupancy < 80
+                                    : selectedVehicle.occupancy < 85
                                     ? "Poucos lugares sentados"
                                     : "Comboio cheio"}{" "}
                                 ({selectedVehicle.occupancy}% ocupado)

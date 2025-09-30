@@ -337,9 +337,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                     )}
                                                                 </span>
                                                             )}
-                                                            {vehicle.occupancy &&
+                                                            {!!vehicle.occupancy &&
                                                                 vehicle.occupancy <=
-                                                                    50 && (
+                                                                    65 && (
                                                                     <User
                                                                         size={
                                                                             15
@@ -348,11 +348,11 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                         className="text-green-500"
                                                                     />
                                                                 )}
-                                                            {vehicle.occupancy &&
+                                                            {!!vehicle.occupancy &&
                                                                 vehicle.occupancy >
-                                                                    50 &&
+                                                                    65 &&
                                                                 vehicle.occupancy <=
-                                                                    80 && (
+                                                                    85 && (
                                                                     <Users
                                                                         size={
                                                                             15
@@ -361,9 +361,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                         className="text-yellow-500"
                                                                     />
                                                                 )}
-                                                            {vehicle.occupancy &&
+                                                            {!!vehicle.occupancy &&
                                                                 vehicle.occupancy >
-                                                                    80 && (
+                                                                    85 && (
                                                                     <UsersThree
                                                                         size={
                                                                             15
