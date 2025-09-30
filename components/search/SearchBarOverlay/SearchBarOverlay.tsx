@@ -124,6 +124,10 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
         if (e.key === "Escape") {
             handleClose();
         }
+
+        if (e.key === "Enter" && filteredResults.length > 0) {
+            handleVehicleClick(filteredResults[0]);
+        }
     };
 
     const handleBackdropClick = (e: React.MouseEvent) => {
