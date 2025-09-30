@@ -65,6 +65,7 @@ import {
     MapPinSimple,
     Moon,
     Path,
+    Sparkle,
     Sun,
     Ticket,
 } from "@phosphor-icons/react";
@@ -676,12 +677,22 @@ export default function Home() {
                                             <Pill
                                                 color={BadgeColor.subtleGreen}
                                             >
-                                                <p>
-                                                    {
-                                                        selectedVehicle.service
-                                                            .designation
-                                                    }
-                                                </p>
+                                                <div className="flex items-center gap-1">
+                                                    <p>
+                                                        {selectedVehicle.service.designation.replace(
+                                                            "(Alta Qualidade)",
+                                                            ""
+                                                        )}
+                                                    </p>
+                                                    {selectedVehicle.service.designation.endsWith(
+                                                        "(Alta Qualidade)"
+                                                    ) && (
+                                                        <Sparkle
+                                                            size={15}
+                                                            weight="fill"
+                                                        />
+                                                    )}
+                                                </div>
                                             </Pill>
                                         </div>
                                         <div style={{ height: "10px" }}></div>
