@@ -53,3 +53,17 @@ export interface Station {
     region: string | null;
     railways: string[];
 }
+
+export interface GeneralStatistics {
+    cancelled: number;
+    running: number;
+    avgSpeed: number;
+    avgDelay: number;
+    maxDelay: number;
+    maxRunningDelay: number;
+    maxAheadness: number;
+    maxRunningAheadness: number;
+    maxOccupancy: number;
+    minOccupancy: number;
+    trainsSupportingOccupancyData: number;
+}

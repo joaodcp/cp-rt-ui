@@ -450,11 +450,11 @@ export default function Home() {
                 vehicles={vehicles || []}
                 onVehicleSelect={handleSearchVehicleSelect}
             />
-            <GeneralStatisticsOverlay
+            {/* <GeneralStatisticsOverlay
                 isOpen={showStatsOverlay}
                 onClose={() => setShowStatsOverlay(false)}
                 statistics={stats?.stats}
-            />
+            /> */}
             {/* <CPLogo
                 style={{
                     height: "5%",
