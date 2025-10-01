@@ -81,15 +81,16 @@ import pkgInfo from "../package.json";
 import TopBarButton from "@/components/TopBarButton/TopBarButton";
 import { useTheme } from "next-themes";
 import InfoDialog from "@/components/InfoDialog/InfoDialog";
-import CPLogo from "@/components/CPLogo";
+// import CPLogo from "@/components/CPLogo";
 import ArrivingBusAnimation from "@/components/ArrivingBusAnimation/ArrivingBusAnimation";
 import BusIcon from "@/components/BusIcon";
 import { Service, TrainStop, VehicleStatus } from "@/types/cp";
-import { Station, EnrichedVehicle } from "@/types/cp-v2";
+import { Station, EnrichedVehicle, GeneralStatistics } from "@/types/cp-v2";
 import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay";
 import { formatDuration } from "@/utils/time";
 import { Train } from "lucide-react";
 import { getFormattedFleetNumber } from "@/utils/fleet";
+import GeneralStatisticsOverlay from "@/components/stats/GeneralStatisticsOverlay";
 
 const unauthenticatedFetcher = (url: string) =>
     fetch(url).then((res) => res.json());
@@ -137,6 +138,7 @@ export default function Home() {
     const [isSSEErrored, _setIsSSEErrored] = useState<boolean>(false);
 
     const [showSearchOverlay, setShowSearchOverlay] = useState<boolean>(false);
+    const [showStatsOverlay, setShowStatsOverlay] = useState<boolean>(false);
 
     const onMouseEnter = useCallback(() => setCursor("pointer"), []);
     const onMouseLeave = useCallback(() => setCursor("auto"), []);
@@ -197,6 +199,12 @@ export default function Home() {
         stations: Station[];
     }>("/api/stations", unauthenticatedFetcher, {
         refreshInterval: 240_000,
+    });
+
+    const { data: stats } = useSWR<{
+        stats: GeneralStatistics;
+    }>("/api/stats", unauthenticatedFetcher, {
+        refreshInterval: 60_000,
     });
 
     useEffect(() => {
@@ -442,7 +450,12 @@ export default function Home() {
                 vehicles={vehicles || []}
                 onVehicleSelect={handleSearchVehicleSelect}
             />
-            <CPLogo
+            <GeneralStatisticsOverlay
+                isOpen={showStatsOverlay}
+                onClose={() => setShowStatsOverlay(false)}
+                statistics={stats?.stats}
+            />
+            {/* <CPLogo
                 style={{
                     height: "5%",
                     width: "auto",
@@ -454,7 +467,22 @@ export default function Home() {
                     zIndex: 4,
                     pointerEvents: "none",
                 }}
-            />
+            /> */}
+            <h1
+                style={{
+                    position: "absolute",
+                    top: "15px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    margin: "auto",
+                    zIndex: 4,
+                    pointerEvents: "none",
+                    textAlign: "center",
+                    fontSize: "2rem",
+                }}
+            >
+                🚆 🇵🇹 🗺️ 🧭
+            </h1>
             {/* <TopBarButton
                 style={{ position: "absolute", zIndex: 1 }}
                 onClick={() => {
@@ -492,7 +520,7 @@ export default function Home() {
                     left: 0,
                 }}
                 onClick={() => {
-                    alert("Will show stats");
+                    setShowStatsOverlay(!showStatsOverlay);
                 }}
             >
                 <ChartBar size={26} />
@@ -546,7 +574,12 @@ export default function Home() {
                 }}
                 cursor={cursor}
             >
-                <Source id="vehicles" type="geojson" data={vehiclesGeoJSON}>
+                <Source
+                    id="vehicles"
+                    type="geojson"
+                    data={vehiclesGeoJSON}
+                    attribution="CP – Comboios de Portugal, E. P. E."
+                >
                     <Layer {...vehiclesLayerStyle}></Layer>
                 </Source>
 

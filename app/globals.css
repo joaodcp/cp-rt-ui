@@ -160,6 +160,10 @@ body {
     pointer-events: none;
 }
 
+.maplibregl-ctrl-attrib-inner {
+    color: black;
+}
+
 @supports (height: 100dvh) and (width: 100dvw) {
     .loader-container {
         width: 100dvw;
