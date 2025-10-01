@@ -578,7 +578,7 @@ export default function Home() {
                     id="vehicles"
                     type="geojson"
                     data={vehiclesGeoJSON}
-                    attribution="CP – Comboios de Portugal, E. P. E."
+                    attribution="Informação em tempo real proveniente de CP – Comboios de Portugal, E. P. E."
                 >
                     <Layer {...vehiclesLayerStyle}></Layer>
                 </Source>
