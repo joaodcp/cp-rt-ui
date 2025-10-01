@@ -468,21 +468,42 @@ export default function Home() {
                     pointerEvents: "none",
                 }}
             /> */}
-            <h1
+            <div
                 style={{
                     position: "absolute",
-                    top: "15px",
+                    top: "22px",
                     left: "50%",
                     transform: "translateX(-50%)",
                     margin: "auto",
                     zIndex: 4,
                     pointerEvents: "none",
-                    textAlign: "center",
                     fontSize: "2rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.55rem",
                 }}
             >
-                🚆 🇵🇹 🗺️ 🧭
-            </h1>
+                <img
+                    src="/emojis/train.png"
+                    alt="🚆"
+                    style={{ height: "1em", verticalAlign: "middle" }}
+                />
+                <img
+                    src="/emojis/portugal.png"
+                    alt="🇵🇹"
+                    style={{ height: "1em", verticalAlign: "middle" }}
+                />
+                <img
+                    src="/emojis/map.png"
+                    alt="🗺️"
+                    style={{ height: "1em", verticalAlign: "middle" }}
+                />
+                <img
+                    src="/emojis/compass.png"
+                    alt="🧭"
+                    style={{ height: "1em", verticalAlign: "middle" }}
+                />
+            </div>
             {/* <TopBarButton
                 style={{ position: "absolute", zIndex: 1 }}
                 onClick={() => {
