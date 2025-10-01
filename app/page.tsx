@@ -90,7 +90,7 @@ import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay
 import { formatDuration } from "@/utils/time";
 import { Train } from "lucide-react";
 import { getFormattedFleetNumber } from "@/utils/fleet";
-import GeneralStatisticsOverlay from "@/components/stats/GeneralStatisticsOverlay";
+// import GeneralStatisticsOverlay from "@/components/stats/GeneralStatisticsOverlay";
 
 const unauthenticatedFetcher = (url: string) =>
     fetch(url).then((res) => res.json());
