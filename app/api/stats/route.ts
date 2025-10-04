@@ -1,8 +1,8 @@
 export const dynamic = "force-static";
-export const revalidate = 7;
+export const revalidate = 30;
 
 export async function GET(request: Request) {
-    const res = await fetch("https://cp.jdcp.workers.dev?excludes=completed", {
+    const res = await fetch("https://cp.jdcp.workers.dev/stats", {
         headers: {
             Authorization: `Bearer ${process.env.WORKER_KEY}`,
         },
