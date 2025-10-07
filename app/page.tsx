@@ -276,17 +276,20 @@ export default function Home() {
     };
 
     vehicles?.forEach((vehicle) => {
-        vehiclesGeoJSON.features.push({
-            type: "Feature",
-            geometry: {
-                type: "Point",
-                coordinates: [
-                    parseFloat(vehicle.longitude),
-                    parseFloat(vehicle.latitude),
-                ],
-            },
-            properties: { ...vehicle, type: "vehicle" },
-        });
+        // cancelled trains have no location (0, 0)
+        if (vehicle.status !== VehicleStatus.Cancelled) {
+            vehiclesGeoJSON.features.push({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [
+                        parseFloat(vehicle.longitude),
+                        parseFloat(vehicle.latitude),
+                    ],
+                },
+                properties: { ...vehicle, type: "vehicle" },
+            });
+        }
     });
 
     function onVehicleSelected(vehicle: EnrichedVehicle) {
