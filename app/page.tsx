@@ -905,16 +905,18 @@ export default function Home() {
                                         }}
                                     >
                                         Na estação inicial
-                                        {stations?.stations &&
-                                        selectedVehicle.lastStation
-                                            ? ` (${
-                                                  stations.stations.find(
-                                                      (s) =>
-                                                          s.code ===
-                                                          selectedVehicle.lastStation
-                                                  )?.designation || ""
-                                              })`
-                                            : ""}
+                                        {(() => {
+                                            const station =
+                                                stations?.stations?.find(
+                                                    (s) =>
+                                                        s.code ===
+                                                        selectedVehicle.lastStation
+                                                )?.designation;
+
+                                            return station
+                                                ? ` (${station})`
+                                                : "";
+                                        })()}
                                     </p>
                                 </div>
                             </>
@@ -939,16 +941,18 @@ export default function Home() {
                                         }}
                                     >
                                         Na estação
-                                        {stations?.stations &&
-                                        selectedVehicle.lastStation
-                                            ? ` (${
-                                                  stations.stations.find(
-                                                      (s) =>
-                                                          s.code ===
-                                                          selectedVehicle.lastStation
-                                                  )?.designation || ""
-                                              })`
-                                            : ""}
+                                        {(() => {
+                                            const station =
+                                                stations?.stations?.find(
+                                                    (s) =>
+                                                        s.code ===
+                                                        selectedVehicle.lastStation
+                                                )?.designation;
+
+                                            return station
+                                                ? ` (${station})`
+                                                : "";
+                                        })()}
                                     </p>
                                 </div>
                             </>
@@ -974,16 +978,9 @@ export default function Home() {
                                         }}
                                     >
                                         A aproximar-se da próxima estação
-                                        {stations?.stations &&
-                                        selectedVehicle.lastStation
-                                            ? ` (${
-                                                  stations.stations.find(
-                                                      (s) =>
-                                                          s.code ===
-                                                          selectedVehicle.lastStation
-                                                  )?.designation || ""
-                                              })`
-                                            : ""}
+                                        {/** TODO: fix this, lastStation is actually last station the train was on
+                                         * and since we no longer have the whole train route, we cant get what the
+                                         * next station after lastStation is without an extra request */}
                                     </p>
                                 </div>
                             </>
