@@ -43,11 +43,7 @@ export default function WGLMap({
                 onMouseLeave={onMouseLeave}
                 cursor={cursor}
                 onMove={(evt) => console.log(evt.viewState)}
-                mapStyle={
-                    resolvedTheme == "light"
-                        ? "https://api.maptiler.com/maps/aa0ea5c8-575e-43df-84dd-f8382eb72402/style.json?key=NvTfdJJxC0xa6dknGF48"
-                        : "https://api.maptiler.com/maps/e9d3c77d-4552-4ed6-83dd-1075b67bd977/style.json?key=NvTfdJJxC0xa6dknGF48"
-                }
+                mapStyle="https://api.maptiler.com/maps/0199ce7f-9c4c-765a-b169-b904900e46d2/style.json?key=l6e23JveW0N5x5jC3TqN"
                 attributionControl={false}
                 onLoad={onLoad}
             >
