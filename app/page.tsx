@@ -60,6 +60,7 @@ import {
     ChartBar,
     Eye,
     Gauge,
+    GithubLogo,
     Info,
     MagnifyingGlass,
     MapPinSimple,
@@ -544,10 +545,14 @@ export default function Home() {
                     left: 0,
                 }}
                 onClick={() => {
-                    setShowStatsOverlay(!showStatsOverlay);
+                    // setShowStatsOverlay(!showStatsOverlay);
+                    window.open(
+                        "https://github.com/joaodcp/cp-rt-ui",
+                        "_blank"
+                    );
                 }}
             >
-                <ChartBar size={26} />
+                <GithubLogo size={26} />
             </TopBarButton>
             <TopBarButton
                 style={{
@@ -766,7 +771,7 @@ export default function Home() {
                                         <Gauge size={15} />
 
                                         <div style={{ width: "7px" }}></div>
-                                        {selectedVehicle?.speed.toFixed(1)}
+                                        {selectedVehicle?.speed?.toFixed(1)}
                                         <div style={{ width: "7px" }}></div>
                                         <p>km/h</p>
                                     </Pill>

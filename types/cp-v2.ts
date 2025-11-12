@@ -12,7 +12,7 @@ export interface Vehicle {
     longitude: string;
     source?: string;
     status: VehicleStatus;
-    timestamp: string;
+    timestamp?: string;
     hasDisruptions: null;
     units?: string[];
 }
