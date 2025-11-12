@@ -4,17 +4,17 @@ export interface Vehicle {
     trainNumber: number;
     runDate: string;
     delay: number;
-    speed: number;
-    occupancy: number | null;
+    speed?: number;
+    occupancy?: number | null;
     lastStation: string;
-    lastDependency: string;
+    lastDependency?: string;
     latitude: string;
     longitude: string;
-    source: string;
+    source?: string;
     status: VehicleStatus;
     timestamp: string;
     hasDisruptions: null;
-    units: string[];
+    units?: string[];
 }
 
 export interface EnrichedVehicle extends Vehicle {

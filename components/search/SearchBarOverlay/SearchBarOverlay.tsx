@@ -99,7 +99,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                 vehicle.destination?.designation
                     ?.toLowerCase()
                     .includes(query) ||
-                vehicle.units.includes(query)
+                vehicle.units?.includes(query)
                 // || vehicle.trainStops?.some((stop: any) =>
                 //     stop.station.designation.toLowerCase().includes(query)
                 // )
@@ -259,15 +259,19 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                 }
                                                             </h3>
                                                             <p className="ml-auto text-xs text-gray-400">
-                                                                {vehicle.units
-                                                                    .map((u) =>
-                                                                        getFormattedFleetNumber(
-                                                                            u
+                                                                {vehicle.units &&
+                                                                    vehicle.units
+                                                                        .map(
+                                                                            (
+                                                                                u
+                                                                            ) =>
+                                                                                getFormattedFleetNumber(
+                                                                                    u
+                                                                                )
                                                                         )
-                                                                    )
-                                                                    .join(
-                                                                        " + "
-                                                                    )}
+                                                                        .join(
+                                                                            " + "
+                                                                        )}
                                                             </p>
                                                             {vehicle.service
                                                                 ?.designation && (
