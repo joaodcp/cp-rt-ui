@@ -43,7 +43,7 @@ export default function WGLMap({
                 onMouseLeave={onMouseLeave}
                 cursor={cursor}
                 onMove={(evt) => console.log(evt.viewState)}
-                mapStyle="https://api.maptiler.com/maps/0199ce7f-9c4c-765a-b169-b904900e46d2/style.json?key=l6e23JveW0N5x5jC3TqN"
+                mapStyle={process.env.NEXT_PUBLIC_MAP_STYLE_URL!}
                 attributionControl={false}
                 onLoad={onLoad}
             >
