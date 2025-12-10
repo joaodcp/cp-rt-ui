@@ -278,7 +278,7 @@ export default function Home() {
 
     vehicles?.forEach((vehicle) => {
         // generically do not show vehicles with invalid coordinates
-        if (!(vehicle.latitude && vehicle.longitude)) {
+        if (vehicle.latitude && vehicle.longitude) {
             vehiclesGeoJSON.features.push({
                 type: "Feature",
                 geometry: {
