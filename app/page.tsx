@@ -277,8 +277,8 @@ export default function Home() {
     };
 
     vehicles?.forEach((vehicle) => {
-        // cancelled trains have no location (0, 0)
-        if (vehicle.status !== VehicleStatus.Cancelled) {
+        // generically do not show vehicles with invalid coordinates
+        if (!(vehicle.latitude && vehicle.longitude)) {
             vehiclesGeoJSON.features.push({
                 type: "Feature",
                 geometry: {
