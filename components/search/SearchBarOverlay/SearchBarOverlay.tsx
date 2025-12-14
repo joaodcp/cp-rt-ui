@@ -12,6 +12,7 @@ import {
 import { formatDuration } from "@/utils/time";
 import { EnrichedVehicle } from "@/types/cp-v2";
 import { getFormattedFleetNumber } from "@/utils/fleet";
+import { useTranslation } from "react-i18next";
 
 // Add keyframe animations
 const styles = `
@@ -68,6 +69,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
     vehicles = [],
     onVehicleSelect,
 }) => {
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredResults, setFilteredResults] = useState<EnrichedVehicle[]>(
         []
@@ -184,7 +186,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                         setSearchQuery(e.target.value)
                                     }
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Procurar comboio, linha ou estação..."
+                                    placeholder={t("search.field_placeholder")}
                                     className="flex-1 text-lg bg-transparent border-none outline-none text-gray-100 placeholder-gray-500"
                                 />
                                 <button
@@ -316,28 +318,40 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                             {vehicle.delay ===
                                                                 0 && (
                                                                 <span className="text-xs font-medium text-green-400">
-                                                                    A horas
+                                                                    {t(
+                                                                        "vehicle_popup.schedule_adherence.on_time"
+                                                                    )}
                                                                 </span>
                                                             )}
                                                             {vehicle.delay >
                                                                 0 && (
                                                                 <span className="text-xs font-medium text-red-400">
-                                                                    Atrasado{" "}
-                                                                    {formatDuration(
-                                                                        vehicle.delay,
-                                                                        true
+                                                                    {t(
+                                                                        "vehicle_popup.schedule_adherence.late",
+                                                                        {
+                                                                            formattedDuration:
+                                                                                formatDuration(
+                                                                                    vehicle.delay,
+                                                                                    true
+                                                                                ),
+                                                                        }
                                                                     )}
                                                                 </span>
                                                             )}
                                                             {vehicle.delay <
                                                                 0 && (
                                                                 <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                                                                    Adiantado{" "}
-                                                                    {formatDuration(
-                                                                        Math.abs(
-                                                                            vehicle.delay
-                                                                        ),
-                                                                        true
+                                                                    {t(
+                                                                        "vehicle_popup.schedule_adherence.early",
+                                                                        {
+                                                                            formattedDuration:
+                                                                                formatDuration(
+                                                                                    Math.abs(
+                                                                                        vehicle.delay
+                                                                                    ),
+                                                                                    true
+                                                                                ),
+                                                                        }
                                                                     )}
                                                                 </span>
                                                             )}
@@ -405,14 +419,12 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
                             {/* Title */}
                             <h3 className="text-xl font-medium text-gray-300 mb-3">
-                                Procurar Comboios
+                                {t("search.title")}
                             </h3>
 
                             {/* Description */}
                             <p className="text-gray-500 text-base max-w-sm mx-auto leading-relaxed">
-                                Comece a escrever o número do comboio, nome do
-                                serviço ou estação para encontrar informações em
-                                tempo real
+                                {t("search.prompt")}
                             </p>
                         </div>
                     </div>

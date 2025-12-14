@@ -1,0 +1,34 @@
+{
+    "vehicle_popup": {
+        "train": "Comboio {{trainNumber}}",
+        "schedule_adherence": {
+            "early": "Adiantado {{formattedDuration}}",
+            "on_time": "A horas",
+            "late": "Atrasado {{formattedDuration}}"
+        },
+        "status": {
+            "in_transit": "Em viagem",
+            "near_next": "A aproximar-se da próxima estação",
+            "at_station": "Na estação",
+            "at_origin": "Na estação inicial",
+            "not_started": "Viagem a iniciar",
+            "cancelled": "Suprimido",
+            "completed": "Viagem terminada"
+        },
+        "updated_at": "Atualizado às"
+    },
+    "search": {
+        "field_placeholder": "Procurar comboio, linha ou estação...",
+        "title": "Procurar Comboios",
+        "prompt": "Comece a escrever o número do comboio, nome do serviço ou estação para encontrar informações em tempo real"
+    },
+    "time": {
+        "hour": "hora",
+        "hours": "horas",
+        "minute": "minuto",
+        "minutes": "minutos",
+        "second": "segundo",
+        "seconds": "segundos",
+        "and": "e"
+    }
+}

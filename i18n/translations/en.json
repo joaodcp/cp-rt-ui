@@ -1,0 +1,34 @@
+{
+    "vehicle_popup": {
+        "train": "Train {{trainNumber}}",
+        "schedule_adherence": {
+            "early": "Early {{formattedDuration}}",
+            "on_time": "On time",
+            "late": "Late {{formattedDuration}}"
+        },
+        "status": {
+            "in_transit": "In transit",
+            "near_next": "Near next station",
+            "at_station": "At station",
+            "at_origin": "At origin station",
+            "not_started": "Trip not started",
+            "cancelled": "Cancelled",
+            "completed": "Trip completed"
+        },
+        "updated_at": "Updated at"
+    },
+    "search": {
+        "field_placeholder": "Search train, line, or station...",
+        "title": "Search Trains",
+        "prompt": "Start typing the train number, service name, or station to find real-time information"
+    },
+    "time": {
+        "hour": "hour",
+        "hours": "hours",
+        "minute": "minute",
+        "minutes": "minutes",
+        "second": "second",
+        "seconds": "seconds",
+        "and": "and"
+    }
+}

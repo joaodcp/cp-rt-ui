@@ -61,6 +61,7 @@ import {
     Eye,
     Gauge,
     GithubLogo,
+    Globe,
     Info,
     MagnifyingGlass,
     MapPinSimple,
@@ -91,6 +92,7 @@ import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay
 import { formatDuration } from "@/utils/time";
 import { Train } from "lucide-react";
 import { getFormattedFleetNumber } from "@/utils/fleet";
+import { useTranslation } from "react-i18next";
 // import GeneralStatisticsOverlay from "@/components/stats/GeneralStatisticsOverlay";
 
 const unauthenticatedFetcher = (url: string) =>
@@ -113,6 +115,7 @@ interface GeoJSONFeature {
 }
 
 export default function Home() {
+    const { t, i18n } = useTranslation();
     const { data: version } = useSWR("/api/version", unauthenticatedFetcher, {
         refreshInterval: 30_000,
     });
@@ -483,30 +486,51 @@ export default function Home() {
                     pointerEvents: "none",
                     fontSize: "2rem",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
-                    gap: "0.55rem",
+                    gap: "1rem",
                 }}
             >
-                <img
-                    src="/emojis/train.png"
-                    alt="🚆"
-                    style={{ height: "1em", verticalAlign: "middle" }}
-                />
-                <img
-                    src="/emojis/portugal.png"
-                    alt="🇵🇹"
-                    style={{ height: "1em", verticalAlign: "middle" }}
-                />
-                <img
-                    src="/emojis/map.png"
-                    alt="🗺️"
-                    style={{ height: "1em", verticalAlign: "middle" }}
-                />
-                <img
-                    src="/emojis/compass.png"
-                    alt="🧭"
-                    style={{ height: "1em", verticalAlign: "middle" }}
-                />
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.55rem",
+                    }}
+                >
+                    <img
+                        src="/emojis/train.png"
+                        alt="🚆"
+                        style={{ height: "1em", verticalAlign: "middle" }}
+                    />
+                    <img
+                        src="/emojis/portugal.png"
+                        alt="🇵🇹"
+                        style={{ height: "1em", verticalAlign: "middle" }}
+                    />
+                    <img
+                        src="/emojis/map.png"
+                        alt="🗺️"
+                        style={{ height: "1em", verticalAlign: "middle" }}
+                    />
+                    <img
+                        src="/emojis/compass.png"
+                        alt="🧭"
+                        style={{ height: "1em", verticalAlign: "middle" }}
+                    />
+                </div>
+                {(vehicles ?? []).filter(
+                    (v) => v.status === VehicleStatus.Cancelled
+                ).length > 0 && (
+                    <Pill
+                        color={BadgeColor.red}
+                        text={`${
+                            (vehicles ?? []).filter(
+                                (v) => v.status === VehicleStatus.Cancelled
+                            ).length
+                        } suprimidos`}
+                    />
+                )}
             </div>
             {/* <TopBarButton
                 style={{ position: "absolute", zIndex: 1 }}
@@ -538,27 +562,59 @@ export default function Home() {
             >
                 <MapPinSimple size={26} />
             </TopBarButton> */}
-            <TopBarButton
+            <div
                 style={{
                     position: "absolute",
                     zIndex: 1,
                     left: 0,
-                }}
-                onClick={() => {
-                    // setShowStatsOverlay(!showStatsOverlay);
-                    window.open(
-                        "https://github.com/joaodcp/cp-rt-ui",
-                        "_blank"
-                    );
+                    top: 0,
+                    display: "flex",
+                    flexDirection: "row",
+                    margin: "20px",
+                    gap: "1rem",
                 }}
             >
-                <GithubLogo size={26} />
-            </TopBarButton>
+                <TopBarButton
+                    onClick={() => {
+                        window.open(
+                            "https://github.com/joaodcp/cp-rt-ui",
+                            "_blank"
+                        );
+                    }}
+                >
+                    <GithubLogo size={26} />
+                </TopBarButton>
+                <TopBarButton
+                    onClick={() => {
+                        i18n.changeLanguage(
+                            i18n.language === "en" ? "pt" : "en"
+                        );
+                    }}
+                    style={{ position: "relative" }} // make the button a relative container
+                >
+                    <Globe size={26} />
+                    <span
+                        style={{
+                            position: "absolute",
+                            bottom: 2,
+                            right: 4,
+                            fontSize: 8,
+                            fontWeight: "bold",
+                            color: "white",
+                            textShadow: "0 0 2px rgba(0,0,0,0.7)",
+                            pointerEvents: "none",
+                        }}
+                    >
+                        {i18n.language.toUpperCase()}
+                    </span>
+                </TopBarButton>
+            </div>
             <TopBarButton
                 style={{
                     position: "absolute",
                     zIndex: 1,
                     right: 0,
+                    margin: "20px",
                 }}
                 onClick={() => {
                     setShowSearchOverlay(!showSearchOverlay);
@@ -634,7 +690,9 @@ export default function Home() {
                                     fontSize: "1.1rem",
                                 }}
                             >
-                                Comboio {selectedVehicle?.trainNumber}
+                                {t("vehicle_popup.train", {
+                                    trainNumber: selectedVehicle?.trainNumber,
+                                })}
                             </h1>
 
                             {selectedVehicle?.units &&
@@ -667,7 +725,7 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                A horas
+                                {t("vehicle_popup.schedule_adherence.on_time")}
                             </p>
                         )}
 
@@ -682,8 +740,12 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Atrasado{" "}
-                                {formatDuration(selectedVehicle.delay, true)}
+                                {t("vehicle_popup.schedule_adherence.late", {
+                                    formattedDuration: formatDuration(
+                                        selectedVehicle.delay,
+                                        true
+                                    ),
+                                })}
                             </p>
                         )}
 
@@ -698,11 +760,12 @@ export default function Home() {
                                     color: "gray",
                                 }}
                             >
-                                Adiantado{" "}
-                                {formatDuration(
-                                    Math.abs(selectedVehicle.delay),
-                                    true
-                                )}
+                                {t("vehicle_popup.schedule_adherence.early", {
+                                    formattedDuration: formatDuration(
+                                        Math.abs(selectedVehicle.delay),
+                                        true
+                                    ),
+                                })}
                             </p>
                         )}
 
@@ -834,7 +897,7 @@ export default function Home() {
                                             textTransform: "uppercase",
                                         }}
                                     >
-                                        Viagem terminada
+                                        {t("vehicle_popup.status.completed")}
                                     </p>
                                 </div>
                             </>
@@ -859,7 +922,7 @@ export default function Home() {
                                             textTransform: "uppercase",
                                         }}
                                     >
-                                        Viagem a iniciar
+                                        {t("vehicle_popup.status.not_started")}
                                     </p>
                                 </div>
                             </>
@@ -885,7 +948,7 @@ export default function Home() {
                                             textTransform: "uppercase",
                                         }}
                                     >
-                                        Em viagem
+                                        {t("vehicle_popup.status.in_transit")}
                                     </p>
                                 </div>
                             </>
@@ -909,7 +972,7 @@ export default function Home() {
                                             textTransform: "uppercase",
                                         }}
                                     >
-                                        Na estação inicial
+                                        {t("vehicle_popup.status.at_origin")}
                                         {(() => {
                                             const station =
                                                 stations?.stations?.find(
@@ -945,7 +1008,7 @@ export default function Home() {
                                             textTransform: "uppercase",
                                         }}
                                     >
-                                        Na estação
+                                        {t("vehicle_popup.status.at_station")}
                                         {(() => {
                                             const station =
                                                 stations?.stations?.find(
@@ -982,7 +1045,7 @@ export default function Home() {
                                             textAlign: "center",
                                         }}
                                     >
-                                        A aproximar-se da próxima estação
+                                        {t("vehicle_popup.status.near_next")}
                                         {/** TODO: fix this, lastStation is actually last station the train was on
                                          * and since we no longer have the whole train route, we cant get what the
                                          * next station after lastStation is without an extra request */}
@@ -1009,7 +1072,7 @@ export default function Home() {
                                             textTransform: "uppercase",
                                         }}
                                     >
-                                        Suprimido
+                                        {t("vehicle_popup.status.cancelled")}
                                     </p>
                                 </div>
                             </>
@@ -1028,7 +1091,7 @@ export default function Home() {
                                             left: "10px",
                                         }}
                                     >
-                                        Atualizado às:{" "}
+                                        {t("vehicle_popup.status.updated_at")}:{" "}
                                         {new Date(
                                             selectedVehicle.timestamp
                                         ).toLocaleTimeString()}

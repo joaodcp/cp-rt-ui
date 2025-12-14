@@ -1,7 +1,6 @@
 .topBarButton {
     border-radius: 8px;
     padding: 5px;
-    margin: 20px;
     top: 0;
     transition: background 0.15s;
     cursor: pointer;
