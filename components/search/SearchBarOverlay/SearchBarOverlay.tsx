@@ -15,6 +15,7 @@ import { formatDuration } from "@/utils/time";
 import { EnrichedVehicle } from "@/types/cp-v2";
 import { getFormattedFleetNumber } from "@/utils/fleet";
 import { useTranslation } from "react-i18next";
+import dynamic from "next/dynamic";
 
 // Add keyframe animations
 const styles = `
@@ -71,7 +72,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
     vehicles = [],
     onVehicleSelect,
 }) => {
-    const { t } = useTranslation();
+    const { t, ready } = useTranslation();
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredResults, setFilteredResults] = useState<EnrichedVehicle[]>(
         []
@@ -143,6 +144,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
             handleClose();
         }
     };
+
+    if (!ready) return null;
 
     return (
         <div
@@ -453,4 +456,6 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
     );
 };
 
-export default SearchOverlay;
+export default dynamic(() => Promise.resolve(SearchOverlay), {
+    ssr: false,
+});

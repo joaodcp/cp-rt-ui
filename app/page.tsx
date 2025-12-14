@@ -93,6 +93,7 @@ import { formatDuration } from "@/utils/time";
 import { Train } from "lucide-react";
 import { getFormattedFleetNumber } from "@/utils/fleet";
 import { useTranslation } from "react-i18next";
+import dynamic from "next/dynamic";
 // import GeneralStatisticsOverlay from "@/components/stats/GeneralStatisticsOverlay";
 
 const unauthenticatedFetcher = (url: string) =>
@@ -114,7 +115,7 @@ interface GeoJSONFeature {
         | (Station & { type: string });
 }
 
-export default function Home() {
+function Home() {
     const { t, i18n } = useTranslation();
     const { data: version } = useSWR("/api/version", unauthenticatedFetcher, {
         refreshInterval: 30_000,
@@ -1116,3 +1117,7 @@ export default function Home() {
         </>
     );
 }
+
+export default dynamic(() => Promise.resolve(Home), {
+    ssr: false,
+});
