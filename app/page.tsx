@@ -520,7 +520,7 @@ function Home() {
                         style={{ height: "1em", verticalAlign: "middle" }}
                     />
                 </div>
-                {(vehicles ?? []).filter(
+                {/* {(vehicles ?? []).filter(
                     (v) => v.status === VehicleStatus.Cancelled
                 ).length > 0 && (
                     <Pill
@@ -531,7 +531,7 @@ function Home() {
                             ).length
                         } suprimidos`}
                     />
-                )}
+                )} */}
             </div>
             {/* <TopBarButton
                 style={{ position: "absolute", zIndex: 1 }}
