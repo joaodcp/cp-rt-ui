@@ -2,9 +2,9 @@
     "vehicle_popup": {
         "train": "Train {{trainNumber}}",
         "schedule_adherence": {
-            "early": "Early {{formattedDuration}}",
+            "early": "{{formattedDuration}} early",
             "on_time": "On time",
-            "late": "Late {{formattedDuration}}"
+            "late": "{{formattedDuration}} late"
         },
         "status": {
             "in_transit": "In transit",
