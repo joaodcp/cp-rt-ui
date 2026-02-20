@@ -1092,7 +1092,7 @@ function Home() {
                                             left: "10px",
                                         }}
                                     >
-                                        {t("vehicle_popup.status.updated_at")}:{" "}
+                                        {t("vehicle_popup.updated_at")}:{" "}
                                         {new Date(
                                             selectedVehicle.timestamp
                                         ).toLocaleTimeString()}
