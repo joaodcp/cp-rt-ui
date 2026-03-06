@@ -30,6 +30,12 @@ export interface EnrichedVehicle extends Vehicle {
         code: string;
         designation: string;
     };
+    gtfs: {
+        tripId: string | null;
+        stopId?: string | null;
+        stopIdWithPlatform?: string | null;
+        stopSequence?: number | null;
+    };
 }
 
 export interface VehicleDetailed extends Vehicle {

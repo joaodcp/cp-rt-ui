@@ -155,11 +155,11 @@ function Home() {
     useEffect(() => {
         if (map) {
             map.loadImage("arrow.png").then((res) =>
-                map.addImage("arrow", res.data, { sdf: true })
+                map.addImage("arrow", res.data, { sdf: true }),
             );
 
             map.loadImage("cp_vehicle_oriented_w_inv.png").then((res) =>
-                map.addImage("bus", res.data)
+                map.addImage("bus", res.data),
             );
         }
     }, [map]);
@@ -248,7 +248,7 @@ function Home() {
             const updatedSelectedVehicle =
                 vehicles?.find(
                     (vehicle) =>
-                        vehicle.trainNumber === selectedVehicle?.trainNumber
+                        vehicle.trainNumber === selectedVehicle?.trainNumber,
                 ) || null;
 
             setSelectedVehicle(updatedSelectedVehicle);
@@ -319,17 +319,17 @@ function Home() {
                 try {
                     if (vehicle.service) {
                         vehicle.service = JSON.parse(
-                            vehicle.service as unknown as string
+                            vehicle.service as unknown as string,
                         ) as Service;
                     }
                     if (vehicle.origin) {
                         vehicle.origin = JSON.parse(
-                            vehicle.origin as unknown as string
+                            vehicle.origin as unknown as string,
                         ) as Service;
                     }
                     if (vehicle.destination) {
                         vehicle.destination = JSON.parse(
-                            vehicle.destination as unknown as string
+                            vehicle.destination as unknown as string,
                         ) as Service;
                     }
                     // vehicle.trainStops = JSON.parse(
@@ -341,7 +341,7 @@ function Home() {
                     //     ) as TrainStop;
                     if (vehicle.units) {
                         vehicle.units = JSON.parse(
-                            vehicle.units as unknown as string
+                            vehicle.units as unknown as string,
                         ) as string[];
                     }
                     onVehicleSelected(vehicle);
@@ -579,7 +579,7 @@ function Home() {
                     onClick={() => {
                         window.open(
                             "https://github.com/joaodcp/cp-rt-ui",
-                            "_blank"
+                            "_blank",
                         );
                     }}
                 >
@@ -588,7 +588,7 @@ function Home() {
                 <TopBarButton
                     onClick={() => {
                         i18n.changeLanguage(
-                            i18n.language === "en" ? "pt" : "en"
+                            i18n.language === "en" ? "pt" : "en",
                         );
                     }}
                     style={{ position: "relative" }} // make the button a relative container
@@ -646,13 +646,13 @@ function Home() {
                     evt.target.setPaintProperty(
                         "railway",
                         "line-color",
-                        "#1c4122"
+                        "#1c4122",
                     );
 
                     evt.target.setPaintProperty(
                         "railway_minor",
                         "line-color",
-                        "#112714"
+                        "#112714",
                     );
 
                     evt.target.setLayerZoomRange("railway", 4, 22);
@@ -705,8 +705,8 @@ function Home() {
                                                 {selectedVehicle?.units
                                                     .map((u) =>
                                                         getFormattedFleetNumber(
-                                                            u
-                                                        )
+                                                            u,
+                                                        ),
                                                     )
                                                     .join(" + ")}
                                             </p>
@@ -744,7 +744,7 @@ function Home() {
                                 {t("vehicle_popup.schedule_adherence.late", {
                                     formattedDuration: formatDuration(
                                         selectedVehicle.delay,
-                                        true
+                                        true,
                                     ),
                                 })}
                             </p>
@@ -764,7 +764,7 @@ function Home() {
                                 {t("vehicle_popup.schedule_adherence.early", {
                                     formattedDuration: formatDuration(
                                         Math.abs(selectedVehicle.delay),
-                                        true
+                                        true,
                                     ),
                                 })}
                             </p>
@@ -776,15 +776,15 @@ function Home() {
                                     selectedVehicle.occupancy < 65
                                         ? "text-green-500"
                                         : selectedVehicle.occupancy < 85
-                                        ? "text-yellow-500"
-                                        : "text-red-500"
+                                          ? "text-yellow-500"
+                                          : "text-red-500"
                                 }`}
                             >
                                 {selectedVehicle.occupancy < 65
                                     ? "Muitos lugares disponíveis"
                                     : selectedVehicle.occupancy < 85
-                                    ? "Poucos lugares sentados"
-                                    : "Comboio cheio"}{" "}
+                                      ? "Poucos lugares sentados"
+                                      : "Comboio cheio"}{" "}
                                 ({selectedVehicle.occupancy}% ocupado)
                             </p>
                         )}
@@ -807,11 +807,11 @@ function Home() {
                                                     <p>
                                                         {selectedVehicle.service.designation.replace(
                                                             "(Alta Qualidade)",
-                                                            ""
+                                                            "",
                                                         )}
                                                     </p>
                                                     {selectedVehicle.service.designation.endsWith(
-                                                        "(Alta Qualidade)"
+                                                        "(Alta Qualidade)",
                                                     ) && (
                                                         <Sparkle
                                                             size={15}
@@ -979,7 +979,7 @@ function Home() {
                                                 stations?.stations?.find(
                                                     (s) =>
                                                         s.code ===
-                                                        selectedVehicle.lastStation
+                                                        selectedVehicle.lastStation,
                                                 )?.designation;
 
                                             return station
@@ -1015,7 +1015,7 @@ function Home() {
                                                 stations?.stations?.find(
                                                     (s) =>
                                                         s.code ===
-                                                        selectedVehicle.lastStation
+                                                        selectedVehicle.lastStation,
                                                 )?.designation;
 
                                             return station
@@ -1047,9 +1047,22 @@ function Home() {
                                         }}
                                     >
                                         {t("vehicle_popup.status.near_next")}
-                                        {/** TODO: fix this, lastStation is actually last station the train was on
-                                         * and since we no longer have the whole train route, we cant get what the
-                                         * next station after lastStation is without an extra request */}
+                                        <br></br>
+                                        {(() => {
+                                            const station =
+                                                stations?.stations?.find(
+                                                    (s) =>
+                                                        s.code ===
+                                                        selectedVehicle.gtfs?.stopId?.replace(
+                                                            "_",
+                                                            "-",
+                                                        ),
+                                                )?.designation;
+
+                                            return station
+                                                ? ` (${station})`
+                                                : "";
+                                        })()}
                                     </p>
                                 </div>
                             </>
@@ -1094,7 +1107,7 @@ function Home() {
                                     >
                                         {t("vehicle_popup.updated_at")}:{" "}
                                         {new Date(
-                                            selectedVehicle.timestamp
+                                            selectedVehicle.timestamp,
                                         ).toLocaleTimeString()}
                                     </p>
                                 )}
