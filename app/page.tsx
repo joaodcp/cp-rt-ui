@@ -332,6 +332,11 @@ function Home() {
                             vehicle.destination as unknown as string,
                         ) as Service;
                     }
+                    if (vehicle.gtfs) {
+                        vehicle.gtfs = JSON.parse(
+                            vehicle.gtfs as unknown as string,
+                        ) as EnrichedVehicle["gtfs"];
+                    }
                     // vehicle.trainStops = JSON.parse(
                     //     vehicle.trainStops as unknown as string
                     // ) as TrainStop[];
