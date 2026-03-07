@@ -115,6 +115,12 @@ interface GeoJSONFeature {
         | (Station & { type: string });
 }
 
+function trackUmamiEvent(eventName: string, eventData?: Record<string, any>) {
+    if (typeof window !== "undefined" && (window as any).umami) {
+        (window as any).umami.track(eventName, eventData);
+    }
+}
+
 function Home() {
     const { t, i18n } = useTranslation();
     const { data: version } = useSWR("/api/version", unauthenticatedFetcher, {
@@ -151,6 +157,10 @@ function Home() {
             if ((e.metaKey && e.key === "k") || (e.ctrlKey && e.key === "j")) {
                 e.preventDefault();
                 setShowSearchOverlay(true);
+                trackUmamiEvent("search_overlay_opened", {
+                    source: "keyboard_shortcut",
+                    shortcut: e.metaKey && e.key === "k" ? "cmd+k" : "ctrl+j",
+                });
             }
         };
 
@@ -317,6 +327,10 @@ function Home() {
         console.log("Trying to select vehicle", vehicle);
         console.log("SelectedVehicle", selectedVehicle);
         setShowPopup(true);
+        trackUmamiEvent("vehicle_selected", {
+            trainNumber: vehicle.trainNumber,
+            status: vehicle.status,
+        });
     }
 
     const handleLayerClick = (event: MapLayerMouseEvent) => {
@@ -599,6 +613,9 @@ function Home() {
                             "https://github.com/joaodcp/cp-rt-ui",
                             "_blank",
                         );
+                        trackUmamiEvent("github_link_clicked", {
+                            source: "top_bar_button",
+                        });
                     }}
                 >
                     <GithubLogo size={26} />
@@ -608,6 +625,10 @@ function Home() {
                         i18n.changeLanguage(
                             i18n.language === "en" ? "pt" : "en",
                         );
+                        trackUmamiEvent("language_changed", {
+                            source: "top_bar_button",
+                            newLanguage: i18n.language === "en" ? "pt" : "en",
+                        });
                     }}
                     style={{ position: "relative" }} // make the button a relative container
                 >
@@ -637,6 +658,9 @@ function Home() {
                 }}
                 onClick={() => {
                     setShowSearchOverlay(!showSearchOverlay);
+                    trackUmamiEvent("search_overlay_opened", {
+                        source: "top_bar_button",
+                    });
                 }}
             >
                 <MagnifyingGlass size={26} />
