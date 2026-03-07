@@ -145,6 +145,19 @@ function Home() {
     const [showSearchOverlay, setShowSearchOverlay] = useState<boolean>(false);
     const [showStatsOverlay, setShowStatsOverlay] = useState<boolean>(false);
 
+    // Keyboard shortcut for search overlay (cmd+k / ctrl+j)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey && e.key === "k") || (e.ctrlKey && e.key === "j")) {
+                e.preventDefault();
+                setShowSearchOverlay(true);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
     const onMouseEnter = useCallback(() => setCursor("pointer"), []);
     const onMouseLeave = useCallback(() => setCursor("auto"), []);
 

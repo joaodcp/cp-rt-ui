@@ -75,7 +75,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
     const { t, ready } = useTranslation();
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredResults, setFilteredResults] = useState<EnrichedVehicle[]>(
-        []
+        [],
     );
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -129,6 +129,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
             handleClose();
         }
 
@@ -238,9 +240,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                             "CANCELLED"
                                                                 ? "bg-red-900/30"
                                                                 : vehicle.status ===
-                                                                  "COMPLETED"
-                                                                ? "bg-gray-700"
-                                                                : "bg-green-900/30"
+                                                                    "COMPLETED"
+                                                                  ? "bg-gray-700"
+                                                                  : "bg-green-900/30"
                                                         }`}
                                                     >
                                                         <Train
@@ -250,9 +252,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                 "CANCELLED"
                                                                     ? "text-red-400"
                                                                     : vehicle.status ===
-                                                                      "COMPLETED"
-                                                                    ? "text-gray-400"
-                                                                    : "text-green-400"
+                                                                        "COMPLETED"
+                                                                      ? "text-gray-400"
+                                                                      : "text-green-400"
                                                             }`}
                                                         />
                                                     </div>
@@ -270,14 +272,14 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                     vehicle.units
                                                                         .map(
                                                                             (
-                                                                                u
+                                                                                u,
                                                                             ) =>
                                                                                 getFormattedFleetNumber(
-                                                                                    u
-                                                                                )
+                                                                                    u,
+                                                                                ),
                                                                         )
                                                                         .join(
-                                                                            " + "
+                                                                            " + ",
                                                                         )}
                                                             </p>
                                                             {vehicle.service
@@ -324,7 +326,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                 0 && (
                                                                 <span className="text-xs font-medium text-green-400">
                                                                     {t(
-                                                                        "vehicle_popup.schedule_adherence.on_time"
+                                                                        "vehicle_popup.schedule_adherence.on_time",
                                                                     )}
                                                                 </span>
                                                             )}
@@ -337,9 +339,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                             formattedDuration:
                                                                                 formatDuration(
                                                                                     vehicle.delay,
-                                                                                    true
+                                                                                    true,
                                                                                 ),
-                                                                        }
+                                                                        },
                                                                     )}
                                                                 </span>
                                                             )}
@@ -352,11 +354,11 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                             formattedDuration:
                                                                                 formatDuration(
                                                                                     Math.abs(
-                                                                                        vehicle.delay
+                                                                                        vehicle.delay,
                                                                                     ),
-                                                                                    true
+                                                                                    true,
                                                                                 ),
-                                                                        }
+                                                                        },
                                                                     )}
                                                                 </span>
                                                             )}
@@ -406,7 +408,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                 />
                                             </div>
                                         </div>
-                                    )
+                                    ),
                                 )}
                             </div>
                         </div>
