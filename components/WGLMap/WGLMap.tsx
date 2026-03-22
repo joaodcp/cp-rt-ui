@@ -42,7 +42,7 @@ export default function WGLMap({
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
                 cursor={cursor}
-                onMove={(evt) => console.log(evt.viewState)}
+                // onMove={(evt) => console.log(evt.viewState)}
                 mapStyle={process.env.NEXT_PUBLIC_MAP_STYLE_URL!}
                 attributionControl={false}
                 onLoad={onLoad}
