@@ -497,8 +497,15 @@ function Home() {
 
             if (event?.features?.[0].properties.type === "station") {
                 const station = event?.features?.[0].properties as Station;
-                handleSearchStationSelect(station);
+                onStationSelected(station);
             }
+        } else {
+            console.log("no feature clicked");
+            setShowPopup(false);
+            setShowStationPopup(false);
+            setSelectedVehicle(null);
+            setSelectedStation(null);
+            setSelectedStationNextArrivals(null);
         }
     };
 
@@ -930,6 +937,8 @@ function Home() {
                         anchor="bottom"
                         offset={20}
                         onClose={handlePopupClose}
+                        closeButton={true}
+                        closeOnClick={false}
                     >
                         <div className="flex items-start absolute top-[12.5px] left-[12.5px] justify-between w-[290px]">
                             <h1
@@ -1381,6 +1390,7 @@ function Home() {
                         offset={20}
                         onClose={handleStationPopupClose}
                         closeButton={true}
+                        closeOnClick={false}
                     >
                         <div>
                             <p
