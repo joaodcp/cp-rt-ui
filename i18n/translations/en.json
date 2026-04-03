@@ -11,7 +11,7 @@
             "near_next": "Near next station",
             "at_station": "At station",
             "at_origin": "At origin station",
-            "not_started": "Trip not started",
+            "not_started": "Starting trip",
             "cancelled": "Cancelled",
             "completed": "Trip completed"
         },
