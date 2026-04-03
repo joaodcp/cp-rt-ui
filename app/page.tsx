@@ -387,7 +387,13 @@ function Home() {
                                 ),
                             };
                         })
-                        .filter((a) => a !== null);
+                        .filter(
+                            (
+                                arrival,
+                            ): arrival is TrainArrival & {
+                                durationToArrivalMinutes: number;
+                            } => arrival !== null,
+                        );
                     setSelectedStationNextArrivals(parsedArrivals);
                     setIsLoadingArrivals(false);
                 });
