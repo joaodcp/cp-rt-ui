@@ -155,12 +155,12 @@ function Home() {
 
     const [selectedStationNextArrivals, _setSelectedStationNextArrivals] =
         useState<
-            (TrainArrival & { durationToArrivalMinutes: number })[] | null
+            (TrainArrival & { durationToArrivalMinutes?: number })[] | null
         >(null);
 
     const selectedStationNextArrivalsRef = useRef(selectedStationNextArrivals);
     const setSelectedStationNextArrivals = (
-        data: (TrainArrival & { durationToArrivalMinutes: number })[] | null,
+        data: (TrainArrival & { durationToArrivalMinutes?: number })[] | null,
     ) => {
         selectedStationNextArrivalsRef.current = data;
         _setSelectedStationNextArrivals(data);
