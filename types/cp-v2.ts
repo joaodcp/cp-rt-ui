@@ -1,5 +1,10 @@
 import { VehicleStatus } from "./cp";
 
+export interface GenericEntity {
+    code: string;
+    designation: string;
+}
+
 export interface Vehicle {
     trainNumber: number;
     runDate: string;
@@ -18,18 +23,9 @@ export interface Vehicle {
 }
 
 export interface EnrichedVehicle extends Vehicle {
-    service: {
-        code: string;
-        designation: string;
-    };
-    origin: {
-        code: string;
-        designation: string;
-    };
-    destination: {
-        code: string;
-        designation: string;
-    };
+    service: GenericEntity;
+    origin: GenericEntity;
+    destination: GenericEntity;
     gtfs: {
         tripId: string | null;
         stopId?: string | null;
@@ -72,4 +68,24 @@ export interface GeneralStatistics {
     maxOccupancy: number;
     minOccupancy: number;
     trainsSupportingOccupancyData: number;
+}
+
+export interface TrainArrival {
+    trainNumber: number;
+    trainService: GenericEntity;
+    trainOrigin: GenericEntity;
+    trainDestination: GenericEntity;
+
+    // static values
+    arrivalTime: string;
+    departureTime: string;
+
+    platform: string;
+    delay: number;
+    occupancy: number;
+    supression: GenericEntity | null;
+
+    // realtime values
+    ETA: number;
+    ETD: number;
 }

@@ -17,6 +17,11 @@
         },
         "updated_at": "Updated at"
     },
+    "station_popup": {
+        "next_arrivals": "Next arrivals",
+        "no_arrivals": "No upcoming arrivals",
+        "station_header": "Station"
+    },
     "search": {
         "field_placeholder": "Search train, line, or station...",
         "title": "Search Trains",

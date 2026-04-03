@@ -30,3 +30,25 @@ export function formatDuration(seconds: number, verbose = false): string {
         parts.slice(-1)
     );
 }
+
+export function parseHHMM(
+    timeStr: string,
+    operationalDate: Date = new Date(),
+): Date | null {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+
+    if (
+        isNaN(hours) ||
+        isNaN(minutes) ||
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59
+    ) {
+        return null;
+    }
+
+    const date = new Date(operationalDate);
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+}

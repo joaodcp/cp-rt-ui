@@ -17,6 +17,11 @@
         },
         "updated_at": "Atualizado às"
     },
+    "station_popup": {
+        "next_arrivals": "Próximos comboios",
+        "no_arrivals": "Sem próximos comboios",
+        "station_header": "Estação"
+    },
     "search": {
         "field_placeholder": "Procurar comboio, linha ou estação...",
         "title": "Procurar Comboios",

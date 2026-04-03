@@ -87,13 +87,19 @@ import InfoDialog from "@/components/InfoDialog/InfoDialog";
 import ArrivingBusAnimation from "@/components/ArrivingBusAnimation/ArrivingBusAnimation";
 import BusIcon from "@/components/BusIcon";
 import { Service, TrainStop, VehicleStatus } from "@/types/cp";
-import { Station, EnrichedVehicle, GeneralStatistics } from "@/types/cp-v2";
+import {
+    Station,
+    EnrichedVehicle,
+    GeneralStatistics,
+    TrainArrival,
+} from "@/types/cp-v2";
 import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay";
-import { formatDuration } from "@/utils/time";
-import { Train } from "lucide-react";
+import { formatDuration, parseHHMM } from "@/utils/time";
+import { Train, TrainIcon } from "lucide-react";
 import { getFormattedFleetNumber } from "@/utils/fleet";
 import { useTranslation } from "react-i18next";
 import dynamic from "next/dynamic";
+// import { BottomSheet } from "@/components/BottomSheet/BottomSheet";
 // import GeneralStatisticsOverlay from "@/components/stats/GeneralStatisticsOverlay";
 
 const unauthenticatedFetcher = (url: string) =>
@@ -142,6 +148,26 @@ function Home() {
     const [selectedVehicle, setSelectedVehicle] =
         useState<EnrichedVehicle | null>(null);
 
+    const [showStationPopup, setShowStationPopup] = useState<boolean>(false);
+    const [selectedStation, setSelectedStation] = useState<Station | null>(
+        null,
+    );
+
+    const [selectedStationNextArrivals, _setSelectedStationNextArrivals] =
+        useState<
+            (TrainArrival & { durationToArrivalMinutes: number })[] | null
+        >(null);
+
+    const selectedStationNextArrivalsRef = useRef(selectedStationNextArrivals);
+    const setSelectedStationNextArrivals = (
+        data: (TrainArrival & { durationToArrivalMinutes: number })[] | null,
+    ) => {
+        selectedStationNextArrivalsRef.current = data;
+        _setSelectedStationNextArrivals(data);
+    };
+
+    const [isLoadingArrivals, setIsLoadingArrivals] = useState<boolean>(false);
+
     const [cursor, setCursor] = useState<string>("auto");
 
     const [isLoading, _setIsLoading] = useState<boolean>(true);
@@ -150,6 +176,9 @@ function Home() {
 
     const [showSearchOverlay, setShowSearchOverlay] = useState<boolean>(false);
     const [showStatsOverlay, setShowStatsOverlay] = useState<boolean>(false);
+
+    const [activeBottomSheetDetent, setActiveBottomSheetDetent] =
+        useState<number>(0);
 
     // Keyboard shortcut for search overlay (cmd+k / ctrl+j)
     useEffect(() => {
@@ -282,21 +311,21 @@ function Home() {
 
     // if (error) return <div>Error</div>;
 
-    // const stationsGeoJSON: GeoJSON = {
-    //     type: "FeatureCollection",
-    //     features:
-    //         stations?.stations.map((station) => ({
-    //             type: "Feature",
-    //             geometry: {
-    //                 type: "Point",
-    //                 coordinates: [
-    //                     parseFloat(station.longitude),
-    //                     parseFloat(station.latitude),
-    //                 ],
-    //             },
-    //             properties: { ...station, type: "station" },
-    //         })) || [],
-    // };
+    const stationsGeoJSON: GeoJSON = {
+        type: "FeatureCollection",
+        features:
+            stations?.stations.map((station) => ({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [
+                        parseFloat(station.longitude),
+                        parseFloat(station.latitude),
+                    ],
+                },
+                properties: { ...station, type: "station" },
+            })) || [],
+    };
 
     const vehiclesGeoJSON: GeoJSON = {
         type: "FeatureCollection",
@@ -320,6 +349,83 @@ function Home() {
         }
     });
 
+    function fetchAndSetSelectedStationNextArrivals() {
+        if (selectedStation) {
+            if (!selectedStationNextArrivalsRef.current)
+                setIsLoadingArrivals(true);
+            fetch("/api/stations/" + selectedStation.code + "/arrivals")
+                .then(
+                    (res) =>
+                        res.json() as Promise<{ arrivals: TrainArrival[] }>,
+                )
+                .then((data) => {
+                    // const sortedArrivals = sortArrivals(data);
+                    const parsedArrivals = data.arrivals
+                        // only show realtime for now, no static schedule arrivals
+                        .filter(
+                            (a) =>
+                                !a.supression &&
+                                (a.ETA !== null ||
+                                    a.ETD !== null ||
+                                    a.delay !== null),
+                        )
+                        .map((arrival) => {
+                            const arrivalTime = String(
+                                arrival.ETA ?? arrival.ETD,
+                            );
+                            const parsedArrival = parseHHMM(arrivalTime);
+
+                            if (!parsedArrival) {
+                                return null;
+                            }
+
+                            return {
+                                ...arrival,
+                                durationToArrivalMinutes: Math.round(
+                                    (parsedArrival.getTime() - Date.now()) /
+                                        60000,
+                                ),
+                            };
+                        })
+                        .filter((a) => a !== null);
+                    setSelectedStationNextArrivals(parsedArrivals);
+                    setIsLoadingArrivals(false);
+                });
+        }
+    }
+
+    useEffect(() => {
+        let intervalId: NodeJS.Timeout | null = null;
+
+        if (selectedStation && showStationPopup) {
+            fetchAndSetSelectedStationNextArrivals();
+            intervalId = setInterval(
+                fetchAndSetSelectedStationNextArrivals,
+                5000,
+            );
+        } else {
+            setSelectedStationNextArrivals(null);
+            setIsLoadingArrivals(false);
+        }
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+    }, [selectedStation, showStationPopup]);
+
+    function onStationSelected(station: Station) {
+        setSelectedStationNextArrivals(null);
+        console.log("SETTING STATION:", station);
+        setSelectedStation(station);
+        setShowStationPopup(true);
+        trackUmamiEvent("station_selected", {
+            stationId: station.code,
+            stationName: station.designation,
+        });
+    }
+
     function onVehicleSelected(vehicle: EnrichedVehicle) {
         console.log("SETTING VEHICLE:", vehicle);
         setSelectedVehicle(vehicle);
@@ -327,6 +433,7 @@ function Home() {
         console.log("Trying to select vehicle", vehicle);
         console.log("SelectedVehicle", selectedVehicle);
         setShowPopup(true);
+        setActiveBottomSheetDetent(1);
         trackUmamiEvent("vehicle_selected", {
             trainNumber: vehicle.trainNumber,
             status: vehicle.status,
@@ -381,6 +488,11 @@ function Home() {
                     console.log("Error parsing vehicle data", e);
                 }
             }
+
+            if (event?.features?.[0].properties.type === "station") {
+                const station = event?.features?.[0].properties as Station;
+                handleSearchStationSelect(station);
+            }
         }
     };
 
@@ -389,6 +501,13 @@ function Home() {
 
         // TODO: test this
         setSelectedVehicle(null);
+        setActiveBottomSheetDetent(0);
+    };
+
+    const handleStationPopupClose = () => {
+        setShowStationPopup(false);
+        setSelectedStation(null);
+        setSelectedStationNextArrivals(null);
     };
 
     const handleSearchVehicleSelect = (vehicle: EnrichedVehicle) => {
@@ -400,6 +519,21 @@ function Home() {
             ],
             zoom: 15,
             essential: true, // this animation is considered essential with respect to prefers-reduced-motion
+        });
+        setShowSearchOverlay(false);
+    };
+
+    const handleSearchStationSelect = (station: Station) => {
+        onStationSelected(station);
+        // setSelectedVehicle(null);
+        setActiveBottomSheetDetent(0);
+        map?.flyTo({
+            center: [
+                parseFloat(station.longitude),
+                parseFloat(station.latitude),
+            ],
+            zoom: 14,
+            essential: true,
         });
         setShowSearchOverlay(false);
     };
@@ -448,17 +582,58 @@ function Home() {
         },
     };
 
-    // const stationsLayerStyle: CircleLayer = {
-    //     source: "stations",
-    //     id: "station",
-    //     type: "circle",
-    //     paint: {
-    //         "circle-color": "#1E90FF",
-    //         "circle-radius": 3,
-    //         "circle-stroke-width": 2,
-    //         "circle-stroke-color": "#ffffff",
-    //     },
-    // };
+    const stationsLayerStyle: CircleLayer = {
+        source: "stations",
+        id: "station",
+        type: "circle",
+        minzoom: 7,
+        paint: {
+            "circle-color": "#7fb3d5",
+            "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                7,
+                1.5,
+                12,
+                2.5,
+            ],
+            "circle-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                7,
+                0.45,
+                12,
+                0.65,
+            ],
+            "circle-stroke-width": 1,
+            "circle-stroke-color": "#0b1a2a",
+            "circle-stroke-opacity": 0.8,
+        },
+    };
+
+    const stationsHitboxLayerStyle: CircleLayer = {
+        source: "stations",
+        id: "station-hitbox",
+        type: "circle",
+        minzoom: 7,
+        paint: {
+            // Almost invisible, but large enough to make small station markers easy to click.
+            "circle-color": "#7fb3d5",
+            "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                7,
+                10,
+                12,
+                14,
+            ],
+            "circle-opacity": 0.01,
+            "circle-stroke-width": 0,
+        },
+    };
 
     const selectedLineLayerStyle: LineLayer = {
         source: "line",
@@ -477,18 +652,42 @@ function Home() {
         },
     };
 
+    function onFlyToTrain(trainNumber: number) {
+        handlePopupClose();
+        const vehicle = vehicles?.find((v) => v.trainNumber == trainNumber);
+        if (vehicle) {
+            map?.flyTo({
+                center: [
+                    parseFloat(vehicle.longitude),
+                    parseFloat(vehicle.latitude),
+                ],
+                zoom: 16,
+                essential: true,
+            });
+
+            onVehicleSelected(vehicle);
+        }
+    }
+
     return (
         <>
             {/* <InfoDialog
                 open={showInfoDialog}
                 onClose={() => setShowInfoDialog(false)}
             /> */}
+            {/* <BottomSheet
+                selectedVehicle={selectedVehicle}
+                activeDetent={activeBottomSheetDetent}
+                onActiveDetentChange={setActiveBottomSheetDetent}
+            /> */}
             <Toaster richColors />
             <SearchOverlay
                 isOpen={showSearchOverlay}
                 onClose={() => setShowSearchOverlay(false)}
                 vehicles={vehicles || []}
+                stations={stations?.stations || []}
                 onVehicleSelect={handleSearchVehicleSelect}
+                onStationSelect={handleSearchStationSelect}
             />
             {/* <GeneralStatisticsOverlay
                 isOpen={showStatsOverlay}
@@ -679,7 +878,7 @@ function Home() {
                     longitude: -7.969213273122932,
                     zoom: 6.4444226078908144,
                 }}
-                interactiveLayerIds={["vehicle", "stop"]}
+                interactiveLayerIds={["vehicle", "station", "station-hitbox"]}
                 onClick={handleLayerClick}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
@@ -702,6 +901,10 @@ function Home() {
                 }}
                 cursor={cursor}
             >
+                <Source id="stations" type="geojson" data={stationsGeoJSON}>
+                    <Layer {...stationsHitboxLayerStyle}></Layer>
+                    <Layer {...stationsLayerStyle}></Layer>
+                </Source>
                 <Source
                     id="vehicles"
                     type="geojson"
@@ -710,10 +913,6 @@ function Home() {
                 >
                     <Layer {...vehiclesLayerStyle}></Layer>
                 </Source>
-
-                {/* <Source id="stations" type="geojson" data={stationsGeoJSON}>
-                    <Layer {...stationsLayerStyle}></Layer>
-                </Source> */}
 
                 {showPopup && selectedVehicle && (
                     <Popup
@@ -1164,6 +1363,231 @@ function Home() {
                                 >
                                     via {selectedVehicle.source}
                                 </p>
+                            )}
+                        </div>
+                    </Popup>
+                )}
+                {showStationPopup && selectedStation && (
+                    <Popup
+                        longitude={parseFloat(selectedStation.longitude)}
+                        latitude={parseFloat(selectedStation.latitude)}
+                        anchor="bottom"
+                        offset={20}
+                        onClose={handleStationPopupClose}
+                        closeButton={true}
+                    >
+                        <div>
+                            <p
+                                style={{
+                                    fontWeight: "700",
+                                    fontSize: "0.8rem",
+                                    color: "gray",
+                                    textTransform: "uppercase",
+                                }}
+                            >
+                                {t("station_popup.station_header")}
+                            </p>
+                            <h1
+                                style={{
+                                    fontWeight: "900",
+                                    fontSize: "1.1rem",
+                                }}
+                            >
+                                {selectedStation.designation}
+                            </h1>
+                            <div style={{ height: "10px" }}></div>
+                            <p style={{ color: "gray", opacity: 0.5 }}>
+                                {"ID: " + selectedStation.code}
+                            </p>
+
+                            <div style={{ height: "15px" }}></div>
+                            {isLoadingArrivals ? (
+                                <Loader />
+                            ) : selectedStationNextArrivals?.length == 0 ? (
+                                <p
+                                    style={{
+                                        fontWeight: "700",
+                                        fontSize: "0.8rem",
+                                        color: "gray",
+                                        textTransform: "uppercase",
+                                    }}
+                                >
+                                    {t("station_popup.no_arrivals")}
+                                </p>
+                            ) : (
+                                <>
+                                    <p
+                                        style={{
+                                            fontWeight: "700",
+                                            fontSize: "0.8rem",
+                                            color: "gray",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        {t("station_popup.next_arrivals")}
+                                    </p>
+                                    <div style={{ height: "5px" }}></div>
+
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "10px",
+                                        }}
+                                    >
+                                        {selectedStationNextArrivals?.map(
+                                            (arrival) => {
+                                                return (
+                                                    <div
+                                                        key={
+                                                            arrival.trainNumber
+                                                        }
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems:
+                                                                "center",
+                                                            justifyContent:
+                                                                "space-between",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                display: "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                gap: "10px",
+                                                            }}
+                                                        >
+                                                            <Pill
+                                                                color={
+                                                                    BadgeColor.green
+                                                                }
+                                                            >
+                                                                <p
+                                                                    style={{
+                                                                        fontSize: 11,
+                                                                    }}
+                                                                >
+                                                                    {`${arrival.trainService.code} ${arrival.trainNumber}`}
+                                                                </p>
+                                                            </Pill>
+                                                            <ArrowRight
+                                                                size={15}
+                                                                weight="bold"
+                                                            />
+                                                            <p
+                                                                style={{
+                                                                    fontWeight:
+                                                                        "bold",
+                                                                    fontSize:
+                                                                        "0.8rem",
+                                                                }}
+                                                            >
+                                                                {
+                                                                    arrival
+                                                                        .trainDestination
+                                                                        .designation
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                        <div
+                                                            style={{
+                                                                width: "7px",
+                                                            }}
+                                                        ></div>
+                                                        <div
+                                                            style={{
+                                                                display: "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                gap: "5px",
+                                                            }}
+                                                        >
+                                                            <p
+                                                                style={{
+                                                                    fontWeight:
+                                                                        "bold",
+                                                                    color: "green",
+                                                                }}
+                                                            >
+                                                                {arrival.durationToArrivalMinutes !=
+                                                                    null &&
+                                                                arrival.durationToArrivalMinutes <=
+                                                                    0 ? (
+                                                                    <ArrivingBusAnimation color="green" />
+                                                                ) : (
+                                                                    `${arrival.durationToArrivalMinutes} min`
+                                                                )}
+                                                            </p>
+                                                            {!!vehicles?.find(
+                                                                // being done thrice
+                                                                (v) =>
+                                                                    v.trainNumber ===
+                                                                    arrival.trainNumber,
+                                                            ) && (
+                                                                <button
+                                                                    onClick={() =>
+                                                                        onFlyToTrain(
+                                                                            arrival.trainNumber!,
+                                                                        )
+                                                                    }
+                                                                    style={{
+                                                                        cursor: !!vehicles?.find(
+                                                                            (
+                                                                                v,
+                                                                            ) =>
+                                                                                v.trainNumber ===
+                                                                                arrival.trainNumber,
+                                                                        )
+                                                                            ? "pointer"
+                                                                            : "default",
+                                                                    }}
+                                                                >
+                                                                    <Pill
+                                                                        color={
+                                                                            BadgeColor.green
+                                                                        }
+                                                                        wrapping={
+                                                                            true
+                                                                        }
+                                                                    >
+                                                                        <div
+                                                                            style={{
+                                                                                display:
+                                                                                    "flex",
+                                                                                alignItems:
+                                                                                    "center",
+                                                                                gap: "5px",
+                                                                                padding:
+                                                                                    "0 5px",
+                                                                            }}
+                                                                        >
+                                                                            <TrainIcon
+                                                                                color="white"
+                                                                                size={
+                                                                                    12
+                                                                                }
+                                                                                // sizeRatio={
+                                                                                //     0.5
+                                                                                // }
+                                                                            />
+
+                                                                            <CaretRight
+                                                                                size={
+                                                                                    15
+                                                                                }
+                                                                            />
+                                                                        </div>
+                                                                    </Pill>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            },
+                                        )}
+                                    </div>
+                                </>
                             )}
                         </div>
                     </Popup>
