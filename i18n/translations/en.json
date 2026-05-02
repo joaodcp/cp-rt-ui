@@ -19,7 +19,7 @@
     },
     "station_popup": {
         "next_arrivals": "Next arrivals",
-        "no_arrivals": "No upcoming arrivals",
+        "no_arrivals": "No upcoming arrivals in the next 3 hours",
         "station_header": "Station"
     },
     "search": {

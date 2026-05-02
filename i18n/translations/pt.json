@@ -19,7 +19,7 @@
     },
     "station_popup": {
         "next_arrivals": "Próximos comboios",
-        "no_arrivals": "Sem próximos comboios",
+        "no_arrivals": "Sem próximos comboios nas próximas 3 horas",
         "station_header": "Estação"
     },
     "search": {

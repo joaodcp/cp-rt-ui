@@ -682,6 +682,14 @@ function Home() {
         }
     }
 
+    const selectedStationNextArrivalsNext3Hours =
+        selectedStationNextArrivals?.filter(
+            (arrival) =>
+                arrival.durationToArrivalMinutes != null &&
+                arrival.durationToArrivalMinutes >= 0 &&
+                arrival.durationToArrivalMinutes <= 180,
+        );
+
     return (
         <>
             {/* <InfoDialog
@@ -1419,7 +1427,8 @@ function Home() {
                             <div style={{ height: "15px" }}></div>
                             {isLoadingArrivals ? (
                                 <Loader />
-                            ) : selectedStationNextArrivals?.length == 0 ? (
+                            ) : selectedStationNextArrivalsNext3Hours?.length ==
+                              0 ? (
                                 <p
                                     style={{
                                         fontWeight: "700",
@@ -1451,9 +1460,8 @@ function Home() {
                                             gap: "10px",
                                         }}
                                     >
-                                        {selectedStationNextArrivals
-                                            ?.slice(0, 10)
-                                            .map((arrival) => {
+                                        {selectedStationNextArrivalsNext3Hours?.map(
+                                            (arrival) => {
                                                 return (
                                                     <div
                                                         key={
@@ -1601,7 +1609,8 @@ function Home() {
                                                         </div>
                                                     </div>
                                                 );
-                                            })}
+                                            },
+                                        )}
                                     </div>
                                 </>
                             )}
