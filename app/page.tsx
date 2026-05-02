@@ -1451,8 +1451,9 @@ function Home() {
                                             gap: "10px",
                                         }}
                                     >
-                                        {selectedStationNextArrivals?.map(
-                                            (arrival) => {
+                                        {selectedStationNextArrivals
+                                            ?.slice(0, 10)
+                                            .map((arrival) => {
                                                 return (
                                                     <div
                                                         key={
@@ -1600,8 +1601,7 @@ function Home() {
                                                         </div>
                                                     </div>
                                                 );
-                                            },
-                                        )}
+                                            })}
                                     </div>
                                 </>
                             )}
