@@ -15,6 +15,11 @@
             "cancelled": "Cancelled",
             "completed": "Trip completed"
         },
+        "occupancy": {
+            "low": "Many seats available",
+            "medium": "Few seats available",
+            "high": "Full train"
+        },
         "updated_at": "Updated at"
     },
     "station_popup": {
@@ -35,5 +40,6 @@
         "second": "second",
         "seconds": "seconds",
         "and": "and"
-    }
+    },
+    "map_attribution": "Realtime information provided by CP – Comboios de Portugal, E. P. E."
 }

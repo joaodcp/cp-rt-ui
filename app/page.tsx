@@ -264,6 +264,16 @@ function Home() {
         refreshInterval: 60_000,
     });
 
+    const { data: currentlySelectedVehicleTripInfo } = useSWR<{
+        occupancy: number | null;
+    }>(
+        selectedVehicle ? `/api/trips/${selectedVehicle.trainNumber}` : null,
+        unauthenticatedFetcher,
+        {
+            refreshInterval: 5_000,
+        },
+    );
+
     useEffect(() => {
         console.log(isLoading);
         if (newVehicles?.vehicles) {
@@ -930,7 +940,7 @@ function Home() {
                     id="vehicles"
                     type="geojson"
                     data={vehiclesGeoJSON}
-                    attribution="Informação em tempo real proveniente de CP – Comboios de Portugal, E. P. E."
+                    attribution={t("map_attribution")}
                 >
                     <Layer {...vehiclesLayerStyle}></Layer>
                 </Source>
@@ -1034,22 +1044,26 @@ function Home() {
                             </p>
                         )}
 
-                        {!!selectedVehicle.occupancy && (
+                        {!!currentlySelectedVehicleTripInfo?.occupancy && (
                             <p
                                 className={`font-bold ${
-                                    selectedVehicle.occupancy < 65
+                                    currentlySelectedVehicleTripInfo.occupancy ===
+                                    1
                                         ? "text-green-500"
-                                        : selectedVehicle.occupancy < 85
+                                        : currentlySelectedVehicleTripInfo.occupancy ===
+                                            2
                                           ? "text-yellow-500"
                                           : "text-red-500"
                                 }`}
+                                style={{ marginTop: "-3px", marginLeft: "2px" }}
                             >
-                                {selectedVehicle.occupancy < 65
-                                    ? "Muitos lugares disponíveis"
-                                    : selectedVehicle.occupancy < 85
-                                      ? "Poucos lugares sentados"
-                                      : "Comboio cheio"}{" "}
-                                ({selectedVehicle.occupancy}% ocupado)
+                                {currentlySelectedVehicleTripInfo.occupancy ===
+                                1
+                                    ? t("vehicle_popup.occupancy.low")
+                                    : currentlySelectedVehicleTripInfo.occupancy ===
+                                        2
+                                      ? t("vehicle_popup.occupancy.medium")
+                                      : t("vehicle_popup.occupancy.high")}
                             </p>
                         )}
 

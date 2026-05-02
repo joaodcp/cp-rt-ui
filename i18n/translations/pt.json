@@ -15,6 +15,11 @@
             "cancelled": "Suprimido",
             "completed": "Viagem terminada"
         },
+        "occupancy": {
+            "low": "Muitos lugares disponíveis",
+            "medium": "Poucos lugares sentados",
+            "high": "Comboio cheio"
+        },
         "updated_at": "Atualizado às"
     },
     "station_popup": {
@@ -35,5 +40,6 @@
         "second": "segundo",
         "seconds": "segundos",
         "and": "e"
-    }
+    },
+    "map_attribution": "Informação em tempo real proveniente de CP – Comboios de Portugal, E. P. E."
 }
