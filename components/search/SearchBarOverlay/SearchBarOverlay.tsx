@@ -94,6 +94,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
     const [filteredResults, setFilteredResults] = useState<SearchResult[]>([]);
     const [activeResultIndex, setActiveResultIndex] = useState(-1);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const resultRefs = useRef<Array<HTMLElement | null>>([]);
 
     // Memoize normalized vehicles data
     const normalizedVehicles = useMemo(
@@ -185,6 +186,18 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
         }
         setFilteredResults(combined);
     }, [searchQuery, normalizedVehicles, normalizedStations]);
+
+    useEffect(() => {
+        resultRefs.current = resultRefs.current.slice(0, filteredResults.length);
+        setActiveResultIndex(-1);
+    }, [filteredResults.length, searchQuery]);
+
+    useEffect(() => {
+        resultRefs.current[activeResultIndex]?.scrollIntoView({
+            block: "nearest",
+            behavior: "smooth",
+        });
+    }, [activeResultIndex]);
 
     const handleClose = () => {
         setSearchQuery("");
@@ -308,11 +321,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                             return (
                                                 <div
                                                     key={`vehicle-${vehicle.trainNumber}`}
-                                                    onClick={() =>
-                                                        handleResultClick(
-                                                            result,
-                                                        )
-                                                    }
+                                                    ref={el => resultRefs.current[index] = el}
+                                                    onClick={() => handleResultClick(result) }
+                                                    onMouseEnter={() => setActiveResultIndex(index) }
                                                     className={baseClasses}
                                                     style={{
                                                         animationDelay: `${
@@ -510,11 +521,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                             return (
                                                 <div
                                                     key={`station-${station.code}`}
-                                                    onClick={() =>
-                                                        handleResultClick(
-                                                            result,
-                                                        )
-                                                    }
+                                                    ref={el => resultRefs.current[index] = el}
+                                                    onClick={() => handleResultClick(result) }
+                                                    onMouseEnter={() => setActiveResultIndex(index) }
                                                     className={baseClasses}
                                                     style={{
                                                         animationDelay: `${
