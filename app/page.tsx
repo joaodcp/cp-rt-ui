@@ -183,12 +183,12 @@ function Home() {
     // Keyboard shortcut for search overlay (cmd+k / ctrl+j)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.metaKey && e.key === "k") || (e.ctrlKey && e.key === "j")) {
+            if ((e.metaKey && e.key === "k") || (e.ctrlKey && e.key === "j") || (!e.metaKey && !e.ctrlKey && e.key === "/")) {
                 e.preventDefault();
                 setShowSearchOverlay(true);
                 trackUmamiEvent("search_overlay_opened", {
                     source: "keyboard_shortcut",
-                    shortcut: e.metaKey && e.key === "k" ? "cmd+k" : "ctrl+j",
+                    shortcut: e.key === "/" ? "/" : (e.metaKey && e.key === "k" ? "cmd+k" : "ctrl+j"),
                 });
             }
         };
