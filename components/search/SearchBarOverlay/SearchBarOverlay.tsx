@@ -92,7 +92,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
     const { t, ready } = useTranslation();
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredResults, setFilteredResults] = useState<SearchResult[]>([]);
+    const [activeResultIndex, setActiveResultIndex] = useState(-1);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const resultRefs = useRef<Array<HTMLElement | null>>([]);
 
     // Memoize normalized vehicles data
     const normalizedVehicles = useMemo(
@@ -185,9 +187,22 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
         setFilteredResults(combined);
     }, [searchQuery, normalizedVehicles, normalizedStations]);
 
+    useEffect(() => {
+        resultRefs.current = resultRefs.current.slice(0, filteredResults.length);
+        setActiveResultIndex(-1);
+    }, [filteredResults.length, searchQuery]);
+
+    useEffect(() => {
+        resultRefs.current[activeResultIndex]?.scrollIntoView({
+            block: "nearest",
+            behavior: "smooth",
+        });
+    }, [activeResultIndex]);
+
     const handleClose = () => {
         setSearchQuery("");
         setFilteredResults([]);
+        setActiveResultIndex(-1);
         onClose();
     };
 
@@ -207,10 +222,22 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
             handleClose();
         }
 
-        if (e.key === "Enter" && filteredResults.length > 0) {
-            e.preventDefault();
-            e.stopPropagation();
-            handleResultClick(filteredResults[0]);
+        if (filteredResults.length > 0) {
+            switch (e.key) {
+                case "Enter":
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleResultClick(filteredResults[activeResultIndex] ?? filteredResults[0]);
+                    break;
+                case "ArrowUp":
+                    e.preventDefault();
+                    setActiveResultIndex(cur => cur <= 0 ? filteredResults.length - 1 : cur - 1);
+                    break;
+                case "ArrowDown":
+                    e.preventDefault();
+                    setActiveResultIndex(cur => cur >= filteredResults.length - 1 ? 0 : cur + 1);
+                    break;
+            }
         }
     };
 
@@ -287,20 +314,17 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                             <div className="space-y-3 mt-4">
                                 {filteredResults.map(
                                     (result: SearchResult, index) => {
+                                        const isActive = index === activeResultIndex;
+                                        const baseClasses = `bg-[#1e1e1e] backdrop-blur-sm rounded-2xl p-4 cursor-pointer hover:bg-[#2e2e2e] dark:hover:bg-gray-800 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] animate-in slide-in-from-top-2 fade-in ${isActive ? "bg-[#2e2e2e] ring-2 ring-green-800" : ""}`;
                                         if (result.type === "vehicle") {
                                             const vehicle = result.data;
                                             return (
                                                 <div
                                                     key={`vehicle-${vehicle.trainNumber}`}
-                                                    onClick={() =>
-                                                        handleResultClick(
-                                                            result,
-                                                        )
-                                                    }
-                                                    className={`bg-[#1e1e1e] backdrop-blur-sm rounded-2xl p-4 cursor-pointer 
-                                  hover:bg-[#2e2e2e] dark:hover:bg-gray-800 hover:shadow-lg 
-                                   transition-all duration-200 hover:scale-[1.02]
-                                  animate-in slide-in-from-top-2 fade-in`}
+                                                    ref={el => resultRefs.current[index] = el}
+                                                    onClick={() => handleResultClick(result) }
+                                                    onMouseEnter={() => setActiveResultIndex(index) }
+                                                    className={baseClasses}
                                                     style={{
                                                         animationDelay: `${
                                                             index * 50
@@ -497,15 +521,10 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                             return (
                                                 <div
                                                     key={`station-${station.code}`}
-                                                    onClick={() =>
-                                                        handleResultClick(
-                                                            result,
-                                                        )
-                                                    }
-                                                    className={`bg-[#1e1e1e] backdrop-blur-sm rounded-2xl p-4 cursor-pointer 
-                                  hover:bg-[#2e2e2e] dark:hover:bg-gray-800 hover:shadow-lg 
-                                   transition-all duration-200 hover:scale-[1.02]
-                                  animate-in slide-in-from-top-2 fade-in`}
+                                                    ref={el => resultRefs.current[index] = el}
+                                                    onClick={() => handleResultClick(result) }
+                                                    onMouseEnter={() => setActiveResultIndex(index) }
+                                                    className={baseClasses}
                                                     style={{
                                                         animationDelay: `${
                                                             index * 50
