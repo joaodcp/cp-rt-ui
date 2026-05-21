@@ -38,6 +38,10 @@ jobs:
 
       - name: build and push
         uses: docker/build-push-action@v6
+        env:
+          WORKER_BASE_URL: ${{ secrets.WORKER_BASE_URL }}
+          WORKER_KEY: ${{ secrets.WORKER_KEY }}
+          NEXT_PUBLIC_PROTOMAPS_TILES_URL: ${{ vars.NEXT_PUBLIC_PROTOMAPS_TILES_URL }}
         with:
           context: .
           push: true
