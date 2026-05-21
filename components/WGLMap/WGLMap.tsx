@@ -43,7 +43,8 @@ export default function WGLMap({
                 onMouseLeave={onMouseLeave}
                 cursor={cursor}
                 // onMove={(evt) => console.log(evt.viewState)}
-                mapStyle={process.env.NEXT_PUBLIC_MAP_STYLE_URL!}
+                // mapStyle={process.env.NEXT_PUBLIC_MAP_STYLE_URL!}
+                mapStyle="https://tiles.openfreemap.org/styles/dark"
                 attributionControl={false}
                 onLoad={onLoad}
             >
