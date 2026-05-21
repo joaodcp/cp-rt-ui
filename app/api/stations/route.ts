@@ -6,6 +6,12 @@ export async function GET(request: Request) {
         headers: {
             Authorization: `Bearer ${process.env.WORKER_KEY}`,
         },
+    }).catch((err) => {
+        console.error("Error fetching stations:", err);
+        return new Response(
+            JSON.stringify({ error: "Failed to fetch stations" }),
+            { status: 500 },
+        );
     });
     const json = await res.json();
     return Response.json(json);
