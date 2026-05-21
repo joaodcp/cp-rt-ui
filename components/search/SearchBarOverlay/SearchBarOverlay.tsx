@@ -342,11 +342,11 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                             return (
                                                 <div
                                                     key={`vehicle-${vehicle.trainNumber}`}
-                                                    ref={(el) =>
-                                                        (resultRefs.current[
+                                                    ref={(el) => {
+                                                        resultRefs.current[
                                                             index
-                                                        ] = el)
-                                                    }
+                                                        ] = el;
+                                                    }}
                                                     onClick={() =>
                                                         handleResultClick(
                                                             result,
@@ -554,11 +554,11 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                             return (
                                                 <div
                                                     key={`station-${station.code}`}
-                                                    ref={(el) =>
-                                                        (resultRefs.current[
+                                                    ref={(el) => {
+                                                        resultRefs.current[
                                                             index
-                                                        ] = el)
-                                                    }
+                                                        ] = el;
+                                                    }}
                                                     onClick={() =>
                                                         handleResultClick(
                                                             result,
