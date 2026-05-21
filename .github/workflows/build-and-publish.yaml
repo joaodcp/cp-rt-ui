@@ -39,7 +39,7 @@ jobs:
       - name: build and push
         uses: docker/build-push-action@v6
         env:
-          NEXT_PUBLIC_PROTOMAPS_TILES_URL: ${{ vars.NEXT_PUBLIC_PROTOMAPS_TILES_URL }}
+          NEXT_PUBLIC_MAP_STYLE_URL: ${{ vars.NEXT_PUBLIC_MAP_STYLE_URL }}
         with:
           context: .
           push: true
