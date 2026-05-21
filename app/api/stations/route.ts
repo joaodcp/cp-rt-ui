@@ -1,18 +1,26 @@
-export const dynamic = "force-static";
-export const revalidate = 300;
+import { cacheLife } from "next/cache";
+import { connection } from "next/server";
 
 export async function GET(request: Request) {
+    await connection();
+
+    const json = await fetchStations();
+    return Response.json(json);
+}
+
+async function fetchStations() {
+    'use cache';
+    cacheLife({
+        stale: 300,
+        revalidate: 300,
+        expire: 600,
+    })
+
     const res = await fetch(`${process.env.WORKER_BASE_URL}/stations`, {
         headers: {
             Authorization: `Bearer ${process.env.WORKER_KEY}`,
         },
-    }).catch((err) => {
-        console.error("Error fetching stations:", err);
-        return new Response(
-            JSON.stringify({ error: "Failed to fetch stations" }),
-            { status: 500 },
-        );
     });
     const json = await res.json();
-    return Response.json(json);
+    return json;
 }
