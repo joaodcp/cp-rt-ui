@@ -204,16 +204,22 @@ function Home() {
 
     const { map } = useMap();
 
-    useEffect(() => {
-        if (map) {
-            map.loadImage("arrow.png").then((res) =>
-                map.addImage("arrow", res.data, { sdf: true }),
-            );
+   useEffect(() => {
+        if (!map) return;
 
-            map.loadImage("cp_vehicle_oriented_w_inv.png").then((res) =>
-                map.addImage("bus", res.data),
-            );
-        }
+        const loadSvgImage = async (url: string, id: string) => {
+            if (map.hasImage(id)) return;
+            const svgText = await fetch(url).then((r) => r.text());
+            const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+                svgText,
+            )}`;
+            const img = new Image();
+            img.src = dataUrl;
+            await img.decode();
+            map.addImage(id, img);
+        };
+
+        loadSvgImage("vehicle_arrow_w.svg", "vehicle_arrow");
     }, [map]);
 
     // useEffect(() => {
@@ -566,7 +572,7 @@ function Home() {
     //     id: "vehicle",
     //     type: "symbol",
     //     layout: {
-    //         "icon-image": "bus",
+    //         "icon-image": "train-icon",
     //         "icon-allow-overlap": true,
     //         "icon-ignore-placement": true,
     //         "icon-anchor": "center",
@@ -582,7 +588,7 @@ function Home() {
     //             0.4,
     //         ],
     //         "icon-offset": [0, 0],
-    //         "icon-rotate": ["get", "heading"],
+    //         "icon-rotate": ["get", "bearing"],
     //     },
     // };
 
@@ -602,6 +608,33 @@ function Home() {
             "circle-radius": 5,
             "circle-stroke-width": 2,
             "circle-stroke-color": "#ffffff",
+        },
+    };
+
+    const vehiclesArrowsLayerStyle: SymbolLayer = {
+        source: "vehicles",
+        id: "vehicle-arrow",
+        type: "symbol",
+        filter: ["all", ["has", "bearing"], ["!=", ["get", "bearing"], ["literal", null]]],
+        layout: {
+            "icon-image": "vehicle_arrow",
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+            "icon-anchor": "center",
+            "symbol-placement": "point",
+            "icon-rotation-alignment": "map",
+            "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.2, 20, 0.2],
+            "icon-offset": [0, -12],
+            "icon-rotate": ["get", "bearing"],
+        },
+        paint: {
+            "icon-opacity": [
+                "interpolate",
+                ["exponential", 1.5],
+                ["zoom"],
+                8, 0,
+                10, 1
+            ],
         },
     };
 
@@ -943,6 +976,7 @@ function Home() {
                     attribution={t("map_attribution")}
                 >
                     <Layer {...vehiclesLayerStyle}></Layer>
+                    <Layer {...vehiclesArrowsLayerStyle}></Layer>
                 </Source>
 
                 {showPopup && selectedVehicle && (

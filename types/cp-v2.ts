@@ -32,6 +32,7 @@ export interface EnrichedVehicle extends Vehicle {
         stopIdWithPlatform?: string | null;
         stopSequence?: number | null;
     };
+    bearing?: number | null;
 }
 
 export interface VehicleDetailed extends Vehicle {
