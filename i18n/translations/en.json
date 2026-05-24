@@ -8,7 +8,7 @@
         },
         "status": {
             "in_transit": "In transit",
-            "near_next": "Near next station",
+            "near_next": "Approaching next station",
             "at_station": "At station",
             "at_origin": "At origin station",
             "not_started": "Starting trip",
