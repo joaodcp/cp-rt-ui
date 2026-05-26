@@ -21,6 +21,9 @@ async function fetchStations() {
             Authorization: `Bearer ${process.env.WORKER_KEY}`,
         },
     });
+
+    if (!res.ok) throw new Error(`upstream error (status: ${res.status}) while fetching stations`);
+
     const json = await res.json();
     return json;
 }
