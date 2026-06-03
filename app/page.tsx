@@ -1599,7 +1599,7 @@ function Home() {
                                                                     color: "green",
                                                                 }}
                                                             >
-                                                                {arrival.durationToArrivalMinutes &&
+                                                                {!arrival.durationToArrivalMinutes ||
                                                                     arrival.durationToArrivalMinutes <=
                                                                     0 ? (
                                                                     <ArrivingBusAnimation color="green" />
