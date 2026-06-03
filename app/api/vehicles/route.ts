@@ -3,7 +3,7 @@ import { connection } from "next/server";
 
 export async function GET(request: Request) {
     await connection();
-    
+
     const json = await fetchVehicles();
     return Response.json(json);
 }
@@ -24,6 +24,9 @@ async function fetchVehicles() {
             },
         }
     );
+
+    if (!res.ok) throw new Error(`upstream error (status: ${res.status}) while fetching vehicles`);
+
     const json = await res.json();
     return json;
 }

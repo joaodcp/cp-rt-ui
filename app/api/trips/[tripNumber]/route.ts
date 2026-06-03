@@ -6,7 +6,7 @@ export async function GET(
     { params }: { params: Promise<{ tripNumber: string }> },
 ) {
     await connection();
-    
+
     const { tripNumber } = await params;
 
     const json = await fetchTrip(tripNumber);
@@ -28,6 +28,9 @@ async function fetchTrip(tripNumber: string) {
             },
         },
     );
+
+    if (!res.ok) throw new Error(`upstream error (status: ${res.status}) while fetching trip (${tripNumber}) details`);
+
     const json = await res.json();
     return json;
 }

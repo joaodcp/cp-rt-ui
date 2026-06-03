@@ -8,7 +8,7 @@ export async function GET(
     await connection();
 
     const { stationId } = await params;
-    
+
     const arrivals = await fetchArrivals(stationId);
     return Response.json({ arrivals });
 }
@@ -28,6 +28,9 @@ async function fetchArrivals(stationId: string) {
             },
         },
     );
+
+    if (!res.ok) throw new Error(`upstream error (status: ${res.status}) while fetching station (${stationId}) arrivals`);
+
     const json = await res.json();
     return json.stationStops;
 }

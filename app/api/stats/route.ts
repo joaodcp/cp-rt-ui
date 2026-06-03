@@ -16,12 +16,15 @@ async function fetchStats() {
         revalidate: 30,
         expire: 60,
     })
-    
+
     const res = await fetch(`${process.env.WORKER_BASE_URL}/stats`, {
         headers: {
             Authorization: `Bearer ${process.env.WORKER_KEY}`,
         },
     });
+
+    if (!res.ok) throw new Error(`upstream error (status: ${res.status}) while fetching stats`);
+
     const json = await res.json();
     return json;
 }
