@@ -9,7 +9,7 @@ export function formatDuration(seconds: number, verbose = false, isArrival = fal
     if (!verbose) {
         let str = "";
         if (h > 0) str += `${h}${isArrival ? "\u00A0" : ""}h`;
-        if (m > 0) str += isArrival ? `${m}\u00A0min` : `${m}m`;
+        if (m > 0) str += isArrival ? `${m}\u00A0min` : `${isArrival && seconds >= 3_660 ? "\u00A0" : ""}${m}m`;
         if (s > 0 || str === "") str += `${s}s`;
         return str;
     }
