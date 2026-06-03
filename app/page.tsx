@@ -94,7 +94,7 @@ import {
     TrainArrival,
 } from "@/types/cp-v2";
 import SearchOverlay from "@/components/search/SearchBarOverlay/SearchBarOverlay";
-import { formatDuration, parseHHMM } from "@/utils/time";
+import { formatDuration, parseHHMM, parseHHMMInTimeZone } from "@/utils/time";
 import { Train, TrainIcon } from "lucide-react";
 import { getFormattedFleetNumber } from "@/utils/fleet";
 import { useTranslation } from "react-i18next";
@@ -117,8 +117,8 @@ interface GeoJSONFeature {
         type: string;
     };
     properties?:
-        | (EnrichedVehicle & { type: string })
-        | (Station & { type: string });
+    | (EnrichedVehicle & { type: string })
+    | (Station & { type: string });
 }
 
 function trackUmamiEvent(eventName: string, eventData?: Record<string, any>) {
@@ -204,7 +204,7 @@ function Home() {
 
     const { map } = useMap();
 
-   useEffect(() => {
+    useEffect(() => {
         if (!map) return;
 
         const loadSvgImage = async (url: string, id: string) => {
@@ -386,21 +386,38 @@ function Home() {
                                     a.delay !== null),
                         )
                         .map((arrival) => {
+                            const hasEtaOrEtd = arrival.ETA !== null || arrival.ETD !== null;
                             const arrivalTime = String(
-                                arrival.ETA ?? arrival.ETD,
+                                arrival.ETA ?? arrival.ETD ?? arrival.arrivalTime ?? arrival.departureTime,
                             );
-                            const parsedArrival = parseHHMM(arrivalTime);
+
+                            let parsedArrival: Date | null = null;
+
+                            // stations with codes starting with "71-" are in spain (tz Europe/Madrid)
+                            if (selectedStation?.code?.startsWith("71-")) {
+                                parsedArrival = parseHHMMInTimeZone(
+                                    arrivalTime,
+                                    "Europe/Madrid",
+                                );
+                            } else {
+                                parsedArrival = parseHHMM(arrivalTime);
+                            }
 
                             if (!parsedArrival) {
                                 return null;
                             }
 
+                            let durationToArrivalMinutes = Math.round(
+                                (parsedArrival.getTime() - Date.now()) /
+                                60000,
+                            );
+
+                            // if no et* consider scheduled arrival + delay as realtime arrival
+                            if (!hasEtaOrEtd) durationToArrivalMinutes += arrival.delay ?? 0;
+
                             return {
                                 ...arrival,
-                                durationToArrivalMinutes: Math.round(
-                                    (parsedArrival.getTime() - Date.now()) /
-                                        60000,
-                                ),
+                                durationToArrivalMinutes
                             };
                         })
                         .filter(
@@ -1080,24 +1097,23 @@ function Home() {
 
                         {!!currentlySelectedVehicleTripInfo?.occupancy && (
                             <p
-                                className={`font-bold ${
-                                    currentlySelectedVehicleTripInfo.occupancy ===
+                                className={`font-bold ${currentlySelectedVehicleTripInfo.occupancy ===
                                     1
-                                        ? "text-green-500"
-                                        : currentlySelectedVehicleTripInfo.occupancy ===
-                                            2
-                                          ? "text-yellow-500"
-                                          : "text-red-500"
-                                }`}
+                                    ? "text-green-500"
+                                    : currentlySelectedVehicleTripInfo.occupancy ===
+                                        2
+                                        ? "text-yellow-500"
+                                        : "text-red-500"
+                                    }`}
                                 style={{ marginTop: "-3px", marginLeft: "2px" }}
                             >
                                 {currentlySelectedVehicleTripInfo.occupancy ===
-                                1
+                                    1
                                     ? t("vehicle_popup.occupancy.low")
                                     : currentlySelectedVehicleTripInfo.occupancy ===
                                         2
-                                      ? t("vehicle_popup.occupancy.medium")
-                                      : t("vehicle_popup.occupancy.high")}
+                                        ? t("vehicle_popup.occupancy.medium")
+                                        : t("vehicle_popup.occupancy.high")}
                             </p>
                         )}
 
@@ -1125,11 +1141,11 @@ function Home() {
                                                     {selectedVehicle.service.designation.endsWith(
                                                         "(Alta Qualidade)",
                                                     ) && (
-                                                        <Sparkle
-                                                            size={15}
-                                                            weight="fill"
-                                                        />
-                                                    )}
+                                                            <Sparkle
+                                                                size={15}
+                                                                weight="fill"
+                                                            />
+                                                        )}
                                                 </div>
                                             </Pill>
                                         </div>
@@ -1218,28 +1234,28 @@ function Home() {
 
                         {selectedVehicle.status ===
                             VehicleStatus.NotStarted && (
-                            <>
-                                <div style={{ height: "5px" }}></div>
+                                <>
+                                    <div style={{ height: "5px" }}></div>
 
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <p
+                                    <div
                                         style={{
-                                            color: "gray",
-                                            fontSize: "0.8rem",
-                                            fontWeight: "700",
-                                            textTransform: "uppercase",
+                                            display: "flex",
+                                            justifyContent: "center",
                                         }}
                                     >
-                                        {t("vehicle_popup.status.not_started")}
-                                    </p>
-                                </div>
-                            </>
-                        )}
+                                        <p
+                                            style={{
+                                                color: "gray",
+                                                fontSize: "0.8rem",
+                                                fontWeight: "700",
+                                                textTransform: "uppercase",
+                                            }}
+                                        >
+                                            {t("vehicle_popup.status.not_started")}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
 
                         <div style={{ height: "5px" }}></div>
 
@@ -1476,7 +1492,7 @@ function Home() {
                             {isLoadingArrivals ? (
                                 <Loader />
                             ) : selectedStationNextArrivalsNext3Hours?.length ==
-                              0 ? (
+                                0 ? (
                                 <p
                                     style={{
                                         fontWeight: "700",
@@ -1541,7 +1557,7 @@ function Home() {
                                                                         fontSize: 11,
                                                                     }}
                                                                 >
-                                                                    {`${arrival.trainService.code} ${arrival.trainNumber}`}
+                                                                    {`${arrival.trainService.code}\u00A0${arrival.trainNumber}`}
                                                                 </p>
                                                             </Pill>
                                                             <ArrowRight
@@ -1583,13 +1599,12 @@ function Home() {
                                                                     color: "green",
                                                                 }}
                                                             >
-                                                                {arrival.durationToArrivalMinutes !=
-                                                                    null &&
-                                                                arrival.durationToArrivalMinutes <=
+                                                                {arrival.durationToArrivalMinutes &&
+                                                                    arrival.durationToArrivalMinutes <=
                                                                     0 ? (
                                                                     <ArrivingBusAnimation color="green" />
                                                                 ) : (
-                                                                    `${arrival.durationToArrivalMinutes} min`
+                                                                    `${formatDuration(arrival.durationToArrivalMinutes! * 60, false, true)}`
                                                                 )}
                                                             </p>
                                                             {!!vehicles?.find(
@@ -1598,62 +1613,62 @@ function Home() {
                                                                     v.trainNumber ===
                                                                     arrival.trainNumber,
                                                             ) && (
-                                                                <button
-                                                                    onClick={() =>
-                                                                        onFlyToTrain(
-                                                                            arrival.trainNumber!,
-                                                                        )
-                                                                    }
-                                                                    style={{
-                                                                        cursor: !!vehicles?.find(
-                                                                            (
-                                                                                v,
-                                                                            ) =>
-                                                                                v.trainNumber ===
-                                                                                arrival.trainNumber,
-                                                                        )
-                                                                            ? "pointer"
-                                                                            : "default",
-                                                                    }}
-                                                                >
-                                                                    <Pill
-                                                                        color={
-                                                                            BadgeColor.green
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            onFlyToTrain(
+                                                                                arrival.trainNumber!,
+                                                                            )
                                                                         }
-                                                                        wrapping={
-                                                                            true
-                                                                        }
+                                                                        style={{
+                                                                            cursor: !!vehicles?.find(
+                                                                                (
+                                                                                    v,
+                                                                                ) =>
+                                                                                    v.trainNumber ===
+                                                                                    arrival.trainNumber,
+                                                                            )
+                                                                                ? "pointer"
+                                                                                : "default",
+                                                                        }}
                                                                     >
-                                                                        <div
-                                                                            style={{
-                                                                                display:
-                                                                                    "flex",
-                                                                                alignItems:
-                                                                                    "center",
-                                                                                gap: "5px",
-                                                                                padding:
-                                                                                    "0 5px",
-                                                                            }}
+                                                                        <Pill
+                                                                            color={
+                                                                                BadgeColor.green
+                                                                            }
+                                                                            wrapping={
+                                                                                true
+                                                                            }
                                                                         >
-                                                                            <TrainIcon
-                                                                                color="white"
-                                                                                size={
-                                                                                    12
-                                                                                }
+                                                                            <div
+                                                                                style={{
+                                                                                    display:
+                                                                                        "flex",
+                                                                                    alignItems:
+                                                                                        "center",
+                                                                                    gap: "5px",
+                                                                                    padding:
+                                                                                        "0 5px",
+                                                                                }}
+                                                                            >
+                                                                                <TrainIcon
+                                                                                    color="white"
+                                                                                    size={
+                                                                                        12
+                                                                                    }
                                                                                 // sizeRatio={
                                                                                 //     0.5
                                                                                 // }
-                                                                            />
+                                                                                />
 
-                                                                            <CaretRight
-                                                                                size={
-                                                                                    15
-                                                                                }
-                                                                            />
-                                                                        </div>
-                                                                    </Pill>
-                                                                </button>
-                                                            )}
+                                                                                <CaretRight
+                                                                                    size={
+                                                                                        15
+                                                                                    }
+                                                                                />
+                                                                            </div>
+                                                                        </Pill>
+                                                                    </button>
+                                                                )}
                                                         </div>
                                                     </div>
                                                 );
