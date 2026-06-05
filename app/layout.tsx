@@ -9,8 +9,8 @@ import "@/i18n/i18n";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "CP Realtime 🚆",
-    description: "Acompanhe todos os comboios da CP em tempo real!",
+    title: "Comboios Realtime 🚆",
+    description: "Acompanhe todos os comboios de Portugal em tempo real!",
 };
 
 export default function RootLayout({

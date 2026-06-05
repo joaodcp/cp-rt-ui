@@ -11,13 +11,13 @@ export async function GET(request: Request) {
 async function fetchVehicles() {
     'use cache';
     cacheLife({
-        stale: 7,
-        revalidate: 7,
+        stale: 3,
+        revalidate: 3,
         expire: 60,
     })
 
     const res = await fetch(
-        `${process.env.WORKER_BASE_URL}?excludes=completed`,
+        `${process.env.WORKER_BASE_URL}?excludes=completed&includes=extraAgencies`,
         {
             headers: {
                 Authorization: `Bearer ${process.env.WORKER_KEY}`,

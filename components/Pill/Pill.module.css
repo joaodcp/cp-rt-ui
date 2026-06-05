@@ -64,3 +64,8 @@
     background-color: #ff4d4f;
     color: #fff;
 }
+
+#subtleRed {
+    background-color: rgba(255, 77, 79, 0.35);
+    color: #ff4d4f;
+}

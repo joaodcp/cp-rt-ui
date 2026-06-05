@@ -17,12 +17,13 @@ export interface Vehicle {
     longitude: string;
     source?: string;
     status: VehicleStatus;
-    timestamp?: string;
-    hasDisruptions: null;
+    timestamp?: number;
+    hasDisruptions: boolean;
     units?: string[];
 }
 
 export interface EnrichedVehicle extends Vehicle {
+    agencyId: string;
     service: GenericEntity;
     origin: GenericEntity;
     destination: GenericEntity;

@@ -9,6 +9,7 @@ export enum BadgeColor {
     green = "green",
     subtleGreen = "subtleGreen",
     red = "red",
+    subtleRed = "subtleRed",
 }
 
 interface BadgeProps {

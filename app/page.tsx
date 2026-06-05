@@ -255,7 +255,7 @@ function Home() {
     const { data: newVehicles } = useSWR<{
         vehicles: EnrichedVehicle[];
     }>("/api/vehicles", unauthenticatedFetcher, {
-        refreshInterval: 5_000,
+        refreshInterval: 3_000,
     });
 
     const { data: stations } = useSWR<{
@@ -273,7 +273,7 @@ function Home() {
     const { data: currentlySelectedVehicleTripInfo } = useSWR<{
         occupancy: number | null;
     }>(
-        selectedVehicle ? `/api/trips/${selectedVehicle.trainNumber}` : null,
+        selectedVehicle && selectedVehicle.agencyId === "CP" ? `/api/trips/${selectedVehicle.trainNumber}` : null,
         unauthenticatedFetcher,
         {
             refreshInterval: 5_000,
@@ -620,6 +620,8 @@ function Home() {
                 "#D7263D", // strong red
                 ["==", ["get", "status"], "COMPLETED"],
                 "#808080", // gray
+                ["==", ["get", "agencyId"], "FT"],
+                "#C74F4F", // fertagus red
                 "#388344", // default green
             ],
             "circle-radius": 5,
@@ -1129,7 +1131,7 @@ function Home() {
                                             }}
                                         >
                                             <Pill
-                                                color={BadgeColor.subtleGreen}
+                                                color={selectedVehicle.agencyId === "FT" ? BadgeColor.subtleRed : BadgeColor.subtleGreen}
                                             >
                                                 <div className="flex items-center gap-1">
                                                     <p>
