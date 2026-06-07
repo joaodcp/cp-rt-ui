@@ -1025,7 +1025,7 @@ function Home() {
 
                             {selectedVehicle?.units &&
                                 selectedVehicle?.units.length > 0 && (
-                                    <Pill color={BadgeColor.green} wrapping>
+                                    <Pill color={selectedVehicle.agencyId === "FT" ? BadgeColor.fertagusRed : BadgeColor.green} wrapping>
                                         <div className="flex items-center gap-1 pr-2 pl-2">
                                             <Train size={15} />
                                             <p>
@@ -1033,6 +1033,7 @@ function Home() {
                                                     .map((u) =>
                                                         getFormattedFleetNumber(
                                                             u,
+                                                            selectedVehicle.agencyId,
                                                         ),
                                                     )
                                                     .join(" + ")}

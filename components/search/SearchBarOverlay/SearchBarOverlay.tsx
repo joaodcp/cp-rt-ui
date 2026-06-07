@@ -233,7 +233,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                     e.stopPropagation();
                     handleResultClick(
                         filteredResults[activeResultIndex] ??
-                            filteredResults[0],
+                        filteredResults[0],
                     );
                     break;
                 case "ArrowUp":
@@ -262,18 +262,16 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
     return (
         <div
-            className={`fixed inset-0 z-50 transition-all duration-[400ms] ease-out ${
-                isOpen ? "visible" : "invisible"
-            }`}
+            className={`fixed inset-0 z-50 transition-all duration-[400ms] ease-out ${isOpen ? "visible" : "invisible"
+                }`}
             onClick={handleBackdropClick}
         >
             {/* Blur backdrop */}
             <div
-                className={`absolute inset-0 transition-all duration-[400ms] ease-out ${
-                    isOpen
-                        ? "backdrop-blur-md bg-black/20"
-                        : "backdrop-blur-none bg-transparent"
-                }`}
+                className={`absolute inset-0 transition-all duration-[400ms] ease-out ${isOpen
+                    ? "backdrop-blur-md bg-black/20"
+                    : "backdrop-blur-none bg-transparent"
+                    }`}
                 style={{
                     backdropFilter: isOpen ? "blur(8px)" : "blur(0px)",
                 }}
@@ -281,11 +279,10 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
             {/* Content container */}
             <div
-                className={`relative z-10 h-full transition-all duration-[400ms] ease-out ${
-                    isOpen
-                        ? "translate-y-0 opacity-100"
-                        : "-translate-y-8 opacity-0"
-                }`}
+                className={`relative z-10 h-full transition-all duration-[400ms] ease-out ${isOpen
+                    ? "translate-y-0 opacity-100"
+                    : "-translate-y-8 opacity-0"
+                    }`}
             >
                 {/* Search input */}
                 <div className="p-4 pt-6">
@@ -359,9 +356,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                     }
                                                     className={baseClasses}
                                                     style={{
-                                                        animationDelay: `${
-                                                            index * 50
-                                                        }ms`,
+                                                        animationDelay: `${index * 50
+                                                            }ms`,
                                                         animationDuration:
                                                             "300ms",
                                                         animationFillMode:
@@ -372,27 +368,31 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                         <div className="flex items-center space-x-3">
                                                             {/* Train icon */}
                                                             <div
-                                                                className={`p-2 rounded-full ${
-                                                                    vehicle.status ===
+                                                                className={`p-2 rounded-full ${vehicle.status ===
                                                                     "CANCELLED"
-                                                                        ? "bg-red-900/30"
-                                                                        : vehicle.status ===
-                                                                            "COMPLETED"
-                                                                          ? "bg-gray-700"
-                                                                          : "bg-green-900/30"
-                                                                }`}
+                                                                    ? "bg-red-900/30"
+                                                                    : vehicle.status ===
+                                                                        "COMPLETED"
+                                                                        ? "bg-gray-700"
+                                                                        : vehicle.agencyId ===
+                                                                            "FT"
+                                                                            ? "bg-[#C74F4F]/30"
+                                                                            : "bg-green-900/30"
+                                                                    }`}
                                                             >
                                                                 <Train
                                                                     size={20}
-                                                                    className={`${
-                                                                        vehicle.status ===
+                                                                    className={`${vehicle.status ===
                                                                         "CANCELLED"
-                                                                            ? "text-red-400"
-                                                                            : vehicle.status ===
-                                                                                "COMPLETED"
-                                                                              ? "text-gray-400"
-                                                                              : "text-green-400"
-                                                                    }`}
+                                                                        ? "text-red-400"
+                                                                        : vehicle.status ===
+                                                                            "COMPLETED"
+                                                                            ? "text-gray-400"
+                                                                            : vehicle.agencyId ===
+                                                                                "FT"
+                                                                                ? "text-[#C74F4F]"
+                                                                                : "text-green-400"
+                                                                        }`}
                                                                 />
                                                             </div>
 
@@ -413,6 +413,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                                     ) =>
                                                                                         getFormattedFleetNumber(
                                                                                             u,
+                                                                                            vehicle.agencyId,
                                                                                         ),
                                                                                 )
                                                                                 .join(
@@ -422,14 +423,22 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                     {vehicle
                                                                         .service
                                                                         ?.designation && (
-                                                                        <span className="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/30 rounded-full">
-                                                                            {
-                                                                                vehicle
-                                                                                    .service
-                                                                                    .designation
-                                                                            }
-                                                                        </span>
-                                                                    )}
+                                                                            <span
+                                                                                className={clsx(
+                                                                                    "px-2 py-1 text-xs font-medium rounded-full",
+                                                                                    vehicle.agencyId ===
+                                                                                        "FT"
+                                                                                        ? "text-white bg-[#C74F4F]/80"
+                                                                                        : "text-green-300 bg-green-900/30",
+                                                                                )}
+                                                                            >
+                                                                                {
+                                                                                    vehicle
+                                                                                        .service
+                                                                                        .designation
+                                                                                }
+                                                                            </span>
+                                                                        )}
                                                                 </div>
 
                                                                 {vehicle.origin &&
@@ -464,47 +473,47 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                 <div className="mt-1 flex items-center gap-2">
                                                                     {vehicle.delay ===
                                                                         0 && (
-                                                                        <span className="text-xs font-medium text-green-400">
-                                                                            {t(
-                                                                                "vehicle_popup.schedule_adherence.on_time",
-                                                                            )}
-                                                                        </span>
-                                                                    )}
+                                                                            <span className="text-xs font-medium text-green-400">
+                                                                                {t(
+                                                                                    "vehicle_popup.schedule_adherence.on_time",
+                                                                                )}
+                                                                            </span>
+                                                                        )}
                                                                     {vehicle.delay >
                                                                         0 && (
-                                                                        <span className="text-xs font-medium text-red-400">
-                                                                            {t(
-                                                                                "vehicle_popup.schedule_adherence.late",
-                                                                                {
-                                                                                    formattedDuration:
-                                                                                        formatDuration(
-                                                                                            vehicle.delay,
-                                                                                            true,
-                                                                                        ),
-                                                                                },
-                                                                            )}
-                                                                        </span>
-                                                                    )}
+                                                                            <span className="text-xs font-medium text-red-400">
+                                                                                {t(
+                                                                                    "vehicle_popup.schedule_adherence.late",
+                                                                                    {
+                                                                                        formattedDuration:
+                                                                                            formatDuration(
+                                                                                                vehicle.delay,
+                                                                                                true,
+                                                                                            ),
+                                                                                    },
+                                                                                )}
+                                                                            </span>
+                                                                        )}
                                                                     {vehicle.delay <
                                                                         0 && (
-                                                                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                                                                            {t(
-                                                                                "vehicle_popup.schedule_adherence.early",
-                                                                                {
-                                                                                    formattedDuration:
-                                                                                        formatDuration(
-                                                                                            Math.abs(
-                                                                                                vehicle.delay,
+                                                                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                                                                {t(
+                                                                                    "vehicle_popup.schedule_adherence.early",
+                                                                                    {
+                                                                                        formattedDuration:
+                                                                                            formatDuration(
+                                                                                                Math.abs(
+                                                                                                    vehicle.delay,
+                                                                                                ),
+                                                                                                true,
                                                                                             ),
-                                                                                            true,
-                                                                                        ),
-                                                                                },
-                                                                            )}
-                                                                        </span>
-                                                                    )}
+                                                                                    },
+                                                                                )}
+                                                                            </span>
+                                                                        )}
                                                                     {!!vehicle.occupancy &&
                                                                         vehicle.occupancy <=
-                                                                            65 && (
+                                                                        65 && (
                                                                             <User
                                                                                 size={
                                                                                     15
@@ -515,9 +524,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                         )}
                                                                     {!!vehicle.occupancy &&
                                                                         vehicle.occupancy >
-                                                                            65 &&
+                                                                        65 &&
                                                                         vehicle.occupancy <=
-                                                                            85 && (
+                                                                        85 && (
                                                                             <Users
                                                                                 size={
                                                                                     15
@@ -528,7 +537,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                                         )}
                                                                     {!!vehicle.occupancy &&
                                                                         vehicle.occupancy >
-                                                                            85 && (
+                                                                        85 && (
                                                                             <UsersThree
                                                                                 size={
                                                                                     15
@@ -571,9 +580,8 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({
                                                     }
                                                     className={baseClasses}
                                                     style={{
-                                                        animationDelay: `${
-                                                            index * 50
-                                                        }ms`,
+                                                        animationDelay: `${index * 50
+                                                            }ms`,
                                                         animationDuration:
                                                             "300ms",
                                                         animationFillMode:
