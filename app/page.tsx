@@ -99,6 +99,7 @@ import { Train, TrainIcon } from "lucide-react";
 import { getFormattedFleetNumber } from "@/utils/fleet";
 import { useTranslation } from "react-i18next";
 import dynamic from "next/dynamic";
+import { FERTAGUS_STATION_IDS } from "@/utils/stations";
 // import { BottomSheet } from "@/components/BottomSheet/BottomSheet";
 // import GeneralStatisticsOverlay from "@/components/stats/GeneralStatisticsOverlay";
 
@@ -155,12 +156,11 @@ function Home() {
 
     const [selectedStationNextArrivals, _setSelectedStationNextArrivals] =
         useState<
-            (TrainArrival & { durationToArrivalMinutes?: number })[] | null
+            (TrainArrival & { durationToArrivalMinutes: number })[] | null
         >(null);
-
     const selectedStationNextArrivalsRef = useRef(selectedStationNextArrivals);
     const setSelectedStationNextArrivals = (
-        data: (TrainArrival & { durationToArrivalMinutes?: number })[] | null,
+        data: (TrainArrival & { durationToArrivalMinutes: number })[] | null,
     ) => {
         selectedStationNextArrivalsRef.current = data;
         _setSelectedStationNextArrivals(data);
@@ -348,6 +348,121 @@ function Home() {
         features: [],
     };
 
+    async function fetchStationArrivals(
+        stationCode: string,
+        agencyIds?: string,
+    ) {
+        const url = agencyIds
+            ? `/api/stations/${stationCode}/arrivals?agencyIds=${encodeURIComponent(agencyIds)}`
+            : `/api/stations/${stationCode}/arrivals`;
+
+        const response = await fetch(url);
+        return (await response.json()) as { arrivals: TrainArrival[] };
+    }
+
+    function mergeArrivals(
+        existing: TrainArrival,
+        incoming: TrainArrival,
+    ): TrainArrival {
+        return {
+            ...existing,
+            ...incoming,
+            trainService: incoming.trainService ?? existing.trainService,
+            trainOrigin: incoming.trainOrigin ?? existing.trainOrigin,
+            trainDestination:
+                incoming.trainDestination ?? existing.trainDestination,
+            arrivalTime: incoming.arrivalTime ?? existing.arrivalTime,
+            departureTime: incoming.departureTime ?? existing.departureTime,
+            platform: incoming.platform ?? existing.platform,
+            delay: incoming.delay ?? existing.delay,
+            occupancy: incoming.occupancy ?? existing.occupancy,
+            supression: incoming.supression ?? existing.supression,
+            ETA: incoming.ETA ?? existing.ETA,
+            ETD: incoming.ETD ?? existing.ETD,
+        };
+    }
+
+    function parseArrivalsForStation(
+        stationCode: string,
+        arrivals: TrainArrival[],
+    ) {
+        return arrivals
+            // only show realtime for now, no static schedule arrivals
+            .filter(
+                (a) =>
+                    !a.supression &&
+                    (a.ETA !== null || a.ETD !== null || a.delay !== null),
+            )
+            .map((arrival) => {
+                const hasEtaOrEtd = arrival.ETA !== null || arrival.ETD !== null;
+                const arrivalTime = String(
+                    arrival.ETA ??
+                    arrival.ETD ??
+                    arrival.arrivalTime ??
+                    arrival.departureTime,
+                );
+
+                let parsedArrival: Date | null = null;
+
+                // stations with codes starting with "71-" are in spain (tz Europe/Madrid)
+                if (stationCode.startsWith("71-")) {
+                    parsedArrival = parseHHMMInTimeZone(
+                        arrivalTime,
+                        "Europe/Madrid",
+                    );
+                } else {
+                    parsedArrival = parseHHMM(arrivalTime);
+                }
+
+                if (!parsedArrival) {
+                    return null;
+                }
+
+                let durationToArrivalMinutes = Math.round(
+                    (parsedArrival.getTime() - Date.now()) / 60000,
+                );
+
+                // if no et* consider scheduled arrival + delay as realtime arrival
+                if (!hasEtaOrEtd) durationToArrivalMinutes += arrival.delay ?? 0;
+
+                return {
+                    ...arrival,
+                    durationToArrivalMinutes,
+                };
+            })
+            .filter(
+                (
+                    arrival,
+                ): arrival is TrainArrival & {
+                    durationToArrivalMinutes: number;
+                } => arrival !== null,
+            );
+    }
+
+    function mergeParsedArrivals(
+        existing: (TrainArrival & { durationToArrivalMinutes: number })[],
+        incoming: (TrainArrival & { durationToArrivalMinutes: number })[],
+    ) {
+        return incoming.reduce((accumulator, arrival) => {
+            const existingIndex = accumulator.findIndex(
+                (candidate) => candidate.trainNumber === arrival.trainNumber,
+            );
+
+            if (existingIndex === -1) {
+                accumulator.push(arrival);
+                return accumulator;
+            }
+
+            accumulator[existingIndex] = mergeArrivals(
+                accumulator[existingIndex],
+                arrival,
+            ) as TrainArrival & { durationToArrivalMinutes: number };
+            return accumulator;
+        }, [...existing]).sort(
+            (a, b) => a.durationToArrivalMinutes - b.durationToArrivalMinutes,
+        );;
+    }
+
     vehicles?.forEach((vehicle) => {
         // generically do not show vehicles with invalid coordinates
         if (vehicle.latitude && vehicle.longitude) {
@@ -369,67 +484,47 @@ function Home() {
         if (selectedStation) {
             if (!selectedStationNextArrivalsRef.current)
                 setIsLoadingArrivals(true);
-            fetch("/api/stations/" + selectedStation.code + "/arrivals")
-                .then(
-                    (res) =>
-                        res.json() as Promise<{ arrivals: TrainArrival[] }>,
-                )
-                .then((data) => {
-                    // const sortedArrivals = sortArrivals(data);
-                    const parsedArrivals = data.arrivals
-                        // only show realtime for now, no static schedule arrivals
-                        .filter(
-                            (a) =>
-                                !a.supression &&
-                                (a.ETA !== null ||
-                                    a.ETD !== null ||
-                                    a.delay !== null),
+            const stationCode = selectedStation.code;
+            const applyArrivals = (
+                arrivals: TrainArrival[],
+                shouldClearLoading = false,
+            ) => {
+                const parsedArrivals = parseArrivalsForStation(
+                    stationCode,
+                    arrivals,
+                );
+
+                setSelectedStationNextArrivals(
+                    selectedStationNextArrivalsRef.current
+                        ? mergeParsedArrivals(
+                            selectedStationNextArrivalsRef.current,
+                            parsedArrivals,
                         )
-                        .map((arrival) => {
-                            const hasEtaOrEtd = arrival.ETA !== null || arrival.ETD !== null;
-                            const arrivalTime = String(
-                                arrival.ETA ?? arrival.ETD ?? arrival.arrivalTime ?? arrival.departureTime,
-                            );
+                        : parsedArrivals,
+                );
 
-                            let parsedArrival: Date | null = null;
+                if (shouldClearLoading) {
+                    setIsLoadingArrivals(false);
+                }
+            };
 
-                            // stations with codes starting with "71-" are in spain (tz Europe/Madrid)
-                            if (selectedStation?.code?.startsWith("71-")) {
-                                parsedArrival = parseHHMMInTimeZone(
-                                    arrivalTime,
-                                    "Europe/Madrid",
-                                );
-                            } else {
-                                parsedArrival = parseHHMM(arrivalTime);
-                            }
-
-                            if (!parsedArrival) {
-                                return null;
-                            }
-
-                            let durationToArrivalMinutes = Math.round(
-                                (parsedArrival.getTime() - Date.now()) /
-                                60000,
-                            );
-
-                            // if no et* consider scheduled arrival + delay as realtime arrival
-                            if (!hasEtaOrEtd) durationToArrivalMinutes += arrival.delay ?? 0;
-
-                            return {
-                                ...arrival,
-                                durationToArrivalMinutes
-                            };
-                        })
-                        .filter(
-                            (
-                                arrival,
-                            ): arrival is TrainArrival & {
-                                durationToArrivalMinutes: number;
-                            } => arrival !== null,
-                        );
-                    setSelectedStationNextArrivals(parsedArrivals);
+            fetchStationArrivals(stationCode)
+                .then((data) => {
+                    applyArrivals(data.arrivals, true);
+                })
+                .catch(() => {
                     setIsLoadingArrivals(false);
                 });
+
+            if (FERTAGUS_STATION_IDS.includes(stationCode)) {
+                fetchStationArrivals(stationCode, "FT")
+                    .then((data) => {
+                        applyArrivals(data.arrivals);
+                    })
+                    .catch(() => {
+                        // FT is optional; keep whatever data we already showed.
+                    });
+            }
         }
     }
 
@@ -1552,7 +1647,7 @@ function Home() {
                                                         >
                                                             <Pill
                                                                 color={
-                                                                    BadgeColor.green
+                                                                    arrival.trainService.code === 'FT' ? BadgeColor.fertagusRed : BadgeColor.green
                                                                 }
                                                             >
                                                                 <p
@@ -1560,7 +1655,7 @@ function Home() {
                                                                         fontSize: 11,
                                                                     }}
                                                                 >
-                                                                    {`${arrival.trainService.code}\u00A0${arrival.trainNumber}`}
+                                                                    {`${arrival.trainService.code.replace('FT', 'U')}\u00A0${arrival.trainNumber}`}
                                                                 </p>
                                                             </Pill>
                                                             <ArrowRight
@@ -1576,9 +1671,7 @@ function Home() {
                                                                 }}
                                                             >
                                                                 {
-                                                                    arrival
-                                                                        .trainDestination
-                                                                        .designation
+                                                                    stations?.stations.find((s) => s.code === arrival.trainDestination.code)?.designation
                                                                 }
                                                             </p>
                                                         </div>
@@ -1636,7 +1729,7 @@ function Home() {
                                                                     >
                                                                         <Pill
                                                                             color={
-                                                                                BadgeColor.green
+                                                                                arrival.trainService.code === 'FT' ? BadgeColor.fertagusRed : BadgeColor.green
                                                                             }
                                                                             wrapping={
                                                                                 true
