@@ -159,6 +159,7 @@ function Home() {
             (TrainArrival & { durationToArrivalMinutes: number })[] | null
         >(null);
     const selectedStationNextArrivalsRef = useRef(selectedStationNextArrivals);
+    const arrivalsRequestIdRef = useRef(0);
     const setSelectedStationNextArrivals = (
         data: (TrainArrival & { durationToArrivalMinutes: number })[] | null,
     ) => {
@@ -482,6 +483,7 @@ function Home() {
 
     function fetchAndSetSelectedStationNextArrivals() {
         if (selectedStation) {
+            const requestId = ++arrivalsRequestIdRef.current;
             if (!selectedStationNextArrivalsRef.current)
                 setIsLoadingArrivals(true);
             const stationCode = selectedStation.code;
@@ -489,6 +491,10 @@ function Home() {
                 arrivals: TrainArrival[],
                 shouldClearLoading = false,
             ) => {
+                if (requestId !== arrivalsRequestIdRef.current) {
+                    return;
+                }
+
                 const parsedArrivals = parseArrivalsForStation(
                     stationCode,
                     arrivals,
@@ -513,7 +519,9 @@ function Home() {
                     applyArrivals(data.arrivals, true);
                 })
                 .catch(() => {
-                    setIsLoadingArrivals(false);
+                    if (requestId === arrivalsRequestIdRef.current) {
+                        setIsLoadingArrivals(false);
+                    }
                 });
 
             if (FERTAGUS_STATION_IDS.includes(stationCode)) {
@@ -550,6 +558,7 @@ function Home() {
     }, [selectedStation, showStationPopup]);
 
     function onStationSelected(station: Station) {
+        arrivalsRequestIdRef.current++;
         setSelectedStationNextArrivals(null);
         console.log("SETTING STATION:", station);
         setSelectedStation(station);
