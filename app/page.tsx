@@ -144,6 +144,7 @@ function Home() {
     const { theme, resolvedTheme, setTheme } = useTheme();
 
     const [vehicles, _setVehicles] = useState<EnrichedVehicle[] | null>(null);
+    const [fertagusVehicles, _setFertagusVehicles] = useState<EnrichedVehicle[] | null>(null);
 
     const [showPopup, setShowPopup] = useState<boolean>(true);
     const [selectedVehicle, setSelectedVehicle] =
@@ -253,9 +254,21 @@ function Home() {
         _setVehicles(data);
     };
 
+    const fertagusVehiclesRef = useRef(vehicles);
+    const setFertagusVehicles = (data: EnrichedVehicle[] | null) => {
+        fertagusVehiclesRef.current = data;
+        _setFertagusVehicles(data);
+    };
+
     const { data: newVehicles } = useSWR<{
         vehicles: EnrichedVehicle[];
     }>("/api/vehicles", unauthenticatedFetcher, {
+        refreshInterval: 3_000,
+    });
+
+    const { data: newFertagusVehicles } = useSWR<{
+        vehicles: EnrichedVehicle[];
+    }>("/api/vehicles?excludes=defaultAgencies&includes=extraAgencies", unauthenticatedFetcher, {
         refreshInterval: 3_000,
     });
 
@@ -308,6 +321,15 @@ function Home() {
             setVehicles(newVehicles.vehicles);
         }
     }, [newVehicles]);
+
+    useEffect(() => {
+        console.log(isLoading);
+        if (newFertagusVehicles?.vehicles) {
+            isLoading && setIsLoading(false);
+
+            setFertagusVehicles(newFertagusVehicles.vehicles);
+        }
+    }, [newFertagusVehicles]);
 
     useEffect(() => {
         if (vehicles && isLoading) {
@@ -465,6 +487,23 @@ function Home() {
     }
 
     vehicles?.forEach((vehicle) => {
+        // generically do not show vehicles with invalid coordinates
+        if (vehicle.latitude && vehicle.longitude) {
+            vehiclesGeoJSON.features.push({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [
+                        parseFloat(vehicle.longitude),
+                        parseFloat(vehicle.latitude),
+                    ],
+                },
+                properties: { ...vehicle, type: "vehicle" },
+            });
+        }
+    });
+
+    fertagusVehicles?.forEach((vehicle) => {
         // generically do not show vehicles with invalid coordinates
         if (vehicle.latitude && vehicle.longitude) {
             vehiclesGeoJSON.features.push({
