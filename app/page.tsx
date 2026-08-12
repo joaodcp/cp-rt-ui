@@ -143,8 +143,8 @@ function Home() {
 
     const { theme, resolvedTheme, setTheme } = useTheme();
 
-    const [vehicles, _setVehicles] = useState<EnrichedVehicle[] | null>(null);
-    const [fertagusVehicles, _setFertagusVehicles] = useState<EnrichedVehicle[] | null>(null);
+    const [vehicles, _setVehicles] = useState<EnrichedVehicle[]>([]);
+    const [fertagusVehicles, _setFertagusVehicles] = useState<EnrichedVehicle[]>([]);
 
     const [showPopup, setShowPopup] = useState<boolean>(true);
     const [selectedVehicle, setSelectedVehicle] =
@@ -249,13 +249,13 @@ function Home() {
     };
 
     const vehiclesRef = useRef(vehicles);
-    const setVehicles = (data: EnrichedVehicle[] | null) => {
+    const setVehicles = (data: EnrichedVehicle[]) => {
         vehiclesRef.current = data;
         _setVehicles(data);
     };
 
-    const fertagusVehiclesRef = useRef(vehicles);
-    const setFertagusVehicles = (data: EnrichedVehicle[] | null) => {
+    const fertagusVehiclesRef = useRef(fertagusVehicles);
+    const setFertagusVehicles = (data: EnrichedVehicle[]) => {
         fertagusVehiclesRef.current = data;
         _setFertagusVehicles(data);
     };
@@ -337,7 +337,7 @@ function Home() {
         }
         if (showPopup && selectedVehicle && vehicles) {
             const updatedSelectedVehicle =
-                vehicles?.find(
+                [...vehicles, ...fertagusVehicles]?.find(
                     (vehicle) =>
                         vehicle.trainNumber === selectedVehicle?.trainNumber,
                 ) || null;
@@ -872,7 +872,7 @@ function Home() {
 
     function onFlyToTrain(trainNumber: number) {
         handlePopupClose();
-        const vehicle = vehicles?.find((v) => v.trainNumber == trainNumber);
+        const vehicle = [...vehicles, ...fertagusVehicles]?.find((v) => v.trainNumber == trainNumber);
         if (vehicle) {
             map?.flyTo({
                 center: [
@@ -910,7 +910,7 @@ function Home() {
             <SearchOverlay
                 isOpen={showSearchOverlay}
                 onClose={() => setShowSearchOverlay(false)}
-                vehicles={vehicles || []}
+                vehicles={[...vehicles, ...fertagusVehicles]}
                 stations={stations?.stations || []}
                 onVehicleSelect={handleSearchVehicleSelect}
                 onStationSelect={handleSearchStationSelect}
@@ -1751,7 +1751,7 @@ function Home() {
                                                                     `${formatDuration(arrival.durationToArrivalMinutes! * 60, false, true)}`
                                                                 )}
                                                             </p>
-                                                            {!!vehicles?.find(
+                                                            {!![...vehicles, ...fertagusVehicles]?.find(
                                                                 // being done thrice
                                                                 (v) =>
                                                                     v.trainNumber ===
@@ -1764,7 +1764,7 @@ function Home() {
                                                                             )
                                                                         }
                                                                         style={{
-                                                                            cursor: !!vehicles?.find(
+                                                                            cursor: !![...vehicles, ...fertagusVehicles]?.find(
                                                                                 (
                                                                                     v,
                                                                                 ) =>
