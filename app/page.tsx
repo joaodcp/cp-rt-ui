@@ -1,29 +1,92 @@
 "use strict";
 "use client";
 
+import * as turf from "@turf/turf";
+import { LineString, MultiLineString, Feature, Point } from "geojson";
+
+// function splitLineStringByClosestPoint(lineString: LineString, point: Point) {
+//     const closestPoint = turf.nearestPointOnLine(lineString, point);
+
+//     const lines = turf.lineSplit(lineString, closestPoint);
+
+//     return lines;
+// }
+
+// function getCalculatedHeading(
+//     previousCoordinates: number[],
+//     currentCoordinates: number[]
+// ): number {
+//     return turf.bearing(
+//         turf.point(currentCoordinates),
+//         turf.point(previousCoordinates)
+//     );
+// }
+
+// function getPopupAnchorForHeading(heading: number): PositionAnchor {
+//     if (heading >= 45 && heading < 135) {
+//         return "top";
+//     } else if (heading >= 135 && heading < 225) {
+//         return "right";
+//     } else if (heading >= 225 && heading < 315) {
+//         return "left";
+//     } else {
+//         return "bottom";
+//     }
+// }
+
 import WGLMap from "@/components/WGLMap/WGLMap";
-import { useMap, Source, Layer, CircleLayer, Popup, LineLayer, SymbolLayer } from "react-map-gl/maplibre";
-import { MapLayerMouseEvent } from "maplibre-gl";
-import useSWR from "swr";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+    useMap,
+    Source,
+    Layer,
+    CircleLayer,
+    Popup,
+    LineLayer,
+    SymbolLayer,
+} from "react-map-gl/maplibre";
+import {
+    LngLatBoundsLike,
+    MapGeoJSONFeature,
+    MapLayerMouseEvent,
+    PositionAnchor,
+} from "maplibre-gl";
+import useSWR from "swr";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+    ArrowDown,
     ArrowRight,
+    ArrowUp,
     CaretRight,
+    ChartBar,
+    Eye,
     Gauge,
     GithubLogo,
     Globe,
+    Info,
     MagnifyingGlass,
+    MapPinSimple,
+    Moon,
+    Path,
     Sparkle,
+    Sun,
+    Ticket,
 } from "@phosphor-icons/react";
-import { Toaster } from "sonner";
+
+import { Toaster, toast } from "sonner";
+
 import Pill, { BadgeColor } from "@/components/Pill/Pill";
 import Loader from "@/components/Loader/Loader";
 import Centered from "@/components/Centered/Centered";
 import FadeInOut, { Fade } from "@/components/FadeInOut/FadeInOut";
+
 import pkgInfo from "../package.json";
 import TopBarButton from "@/components/TopBarButton/TopBarButton";
+import { useTheme } from "next-themes";
+import InfoDialog from "@/components/InfoDialog/InfoDialog";
+// import CPLogo from "@/components/CPLogo";
 import ArrivingBusAnimation from "@/components/ArrivingBusAnimation/ArrivingBusAnimation";
-import { Service, VehicleStatus } from "@/types/cp";
+import BusIcon from "@/components/BusIcon";
+import { Service, TrainStop, VehicleStatus } from "@/types/cp";
 import {
     Station,
     EnrichedVehicle,
@@ -37,20 +100,22 @@ import { getFormattedFleetNumber } from "@/utils/fleet";
 import { useTranslation } from "react-i18next";
 import dynamic from "next/dynamic";
 import { FERTAGUS_STATION_IDS } from "@/utils/stations";
+// import { BottomSheet } from "@/components/BottomSheet/BottomSheet";
+// import GeneralStatisticsOverlay from "@/components/stats/GeneralStatisticsOverlay";
 
 const unauthenticatedFetcher = (url: string) =>
     fetch(url).then((res) => res.json());
 
 interface GeoJSON {
-    type: "FeatureCollection";
+    type: string;
     features: GeoJSONFeature[];
 }
 
 interface GeoJSONFeature {
-    type: "Feature";
+    type: string;
     geometry: {
-        coordinates: number[];
-        type: "Point";
+        coordinates: number[] | number[][];
+        type: string;
     };
     properties?:
     | (EnrichedVehicle & { type: string })
@@ -71,15 +136,21 @@ function Home() {
 
     useEffect(() => {
         if (version && version.version !== pkgInfo.version) {
+            // running different version than the latest one
             window.location.reload();
         }
     }, [version]);
 
+    const { theme, resolvedTheme, setTheme } = useTheme();
+
+    const [vehicles, _setVehicles] = useState<EnrichedVehicle[] | null>(null);
+    const [fertagusVehicles, _setFertagusVehicles] = useState<EnrichedVehicle[] | null>(null);
+
+    const [showPopup, setShowPopup] = useState<boolean>(true);
     const [selectedVehicle, setSelectedVehicle] =
         useState<EnrichedVehicle | null>(null);
-    const [showPopup, setShowPopup] = useState(true);
 
-    const [showStationPopup, setShowStationPopup] = useState(false);
+    const [showStationPopup, setShowStationPopup] = useState<boolean>(false);
     const [selectedStation, setSelectedStation] = useState<Station | null>(
         null,
     );
@@ -90,21 +161,48 @@ function Home() {
         >(null);
     const selectedStationNextArrivalsRef = useRef(selectedStationNextArrivals);
     const arrivalsRequestIdRef = useRef(0);
+    const setSelectedStationNextArrivals = (
+        data: (TrainArrival & { durationToArrivalMinutes: number })[] | null,
+    ) => {
+        selectedStationNextArrivalsRef.current = data;
+        _setSelectedStationNextArrivals(data);
+    };
 
-    const setSelectedStationNextArrivals = useCallback(
-        (
-            data: (TrainArrival & { durationToArrivalMinutes: number })[] | null,
-        ) => {
-            selectedStationNextArrivalsRef.current = data;
-            _setSelectedStationNextArrivals(data);
-        },
-        [],
-    );
+    const [isLoadingArrivals, setIsLoadingArrivals] = useState<boolean>(false);
 
-    const [isLoadingArrivals, setIsLoadingArrivals] = useState(false);
-    const [cursor, setCursor] = useState("auto");
-    const [isLoading, setIsLoading] = useState(true);
-    const [showSearchOverlay, setShowSearchOverlay] = useState(false);
+    const [cursor, setCursor] = useState<string>("auto");
+
+    const [isLoading, _setIsLoading] = useState<boolean>(true);
+
+    const [isSSEErrored, _setIsSSEErrored] = useState<boolean>(false);
+
+    const [showSearchOverlay, setShowSearchOverlay] = useState<boolean>(false);
+    const [showStatsOverlay, setShowStatsOverlay] = useState<boolean>(false);
+
+    const [activeBottomSheetDetent, setActiveBottomSheetDetent] =
+        useState<number>(0);
+
+    // Keyboard shortcut for search overlay (cmd+k / ctrl+j)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey && e.key === "k") || (e.ctrlKey && e.key === "j") || (!e.metaKey && !e.ctrlKey && e.key === "/")) {
+                e.preventDefault();
+                setShowSearchOverlay(true);
+                trackUmamiEvent("search_overlay_opened", {
+                    source: "keyboard_shortcut",
+                    shortcut: e.key === "/" ? "/" : (e.metaKey && e.key === "k" ? "cmd+k" : "ctrl+j"),
+                });
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
+    const onMouseEnter = useCallback(() => setCursor("pointer"), []);
+    const onMouseLeave = useCallback(() => setCursor("auto"), []);
+
+    // const [isMapLoading, setIsMapLoading] = useState<boolean>(true);
 
     const { map } = useMap();
 
@@ -113,151 +211,183 @@ function Home() {
 
         const loadSvgImage = async (url: string, id: string) => {
             if (map.hasImage(id)) return;
-            const response = await fetch(url);
-            const svgText = await response.text();
-            const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
+            const svgText = await fetch(url).then((r) => r.text());
+            const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+                svgText,
+            )}`;
             const img = new Image();
             img.src = dataUrl;
             await img.decode();
-            if (!map.hasImage(id)) {
-                map.addImage(id, img);
-            }
+            map.addImage(id, img);
         };
 
-        loadSvgImage("vehicle_arrow_w.svg", "vehicle_arrow").catch(
-            console.error,
-        );
+        loadSvgImage("vehicle_arrow_w.svg", "vehicle_arrow");
     }, [map]);
 
-    const { data: cpData } = useSWR<{ vehicles: EnrichedVehicle[] }>(
-        "/api/vehicles",
+    // useEffect(() => {
+    //     setIsMapLoading(!map?.loaded());
+    // }, [map?.loaded()]);
+
+    const [toastId, _setToastId] = useState<string | number | null>(null);
+
+    const toastIdRef = useRef(toastId);
+    const setToastId = (data: string | number | null) => {
+        toastIdRef.current = data;
+        _setToastId(data);
+    };
+
+    const isSSEErroredRef = useRef(isSSEErrored);
+    const setIsSSEErrored = (data: boolean) => {
+        isSSEErroredRef.current = data;
+        _setIsSSEErrored(data);
+    };
+
+    const isLoadingRef = useRef(isLoading);
+    const setIsLoading = (data: boolean) => {
+        isLoadingRef.current = data;
+        _setIsLoading(data);
+    };
+
+    const vehiclesRef = useRef(vehicles);
+    const setVehicles = (data: EnrichedVehicle[] | null) => {
+        vehiclesRef.current = data;
+        _setVehicles(data);
+    };
+
+    const fertagusVehiclesRef = useRef(vehicles);
+    const setFertagusVehicles = (data: EnrichedVehicle[] | null) => {
+        fertagusVehiclesRef.current = data;
+        _setFertagusVehicles(data);
+    };
+
+    const { data: newVehicles } = useSWR<{
+        vehicles: EnrichedVehicle[];
+    }>("/api/vehicles", unauthenticatedFetcher, {
+        refreshInterval: 3_000,
+    });
+
+    const { data: newFertagusVehicles } = useSWR<{
+        vehicles: EnrichedVehicle[];
+    }>("/api/vehicles?excludes=defaultAgencies&includes=extraAgencies", unauthenticatedFetcher, {
+        refreshInterval: 3_000,
+    });
+
+    const { data: stations } = useSWR<{
+        stations: Station[];
+    }>("/api/stations", unauthenticatedFetcher, {
+        refreshInterval: 240_000,
+    });
+
+    const { data: stats } = useSWR<{
+        stats: GeneralStatistics;
+    }>("/api/stats", unauthenticatedFetcher, {
+        refreshInterval: 60_000,
+    });
+
+    const { data: currentlySelectedVehicleTripInfo } = useSWR<{
+        occupancy: number | null;
+    }>(
+        selectedVehicle && selectedVehicle.agencyId === "CP" ? `/api/trips/${selectedVehicle.trainNumber}` : null,
         unauthenticatedFetcher,
-        { refreshInterval: 3_000 },
+        {
+            refreshInterval: 5_000,
+        },
     );
 
-    const { data: fertagusData } = useSWR<{ vehicles: EnrichedVehicle[] }>(
-        "/api/vehicles?excludes=defaultAgencies&includes=extraAgencies",
-        unauthenticatedFetcher,
-        { refreshInterval: 3_000 },
-    );
-
-    const { data: stations } = useSWR<{ stations: Station[] }>(
-        "/api/stations",
-        unauthenticatedFetcher,
-        { refreshInterval: 240_000 },
-    );
-
-    const { data: stats } = useSWR<{ stats: GeneralStatistics }>(
-        "/api/stats",
-        unauthenticatedFetcher,
-        { refreshInterval: 60_000 },
-    );
-
-    const cpVehicles = cpData?.vehicles ?? [];
-    const fertagusVehicles = fertagusData?.vehicles ?? [];
-
-    // the map is usable as soon as either realtime feed has arrived.
     useEffect(() => {
-        if (cpData || fertagusData) {
+        console.log(isLoading);
+        if (newVehicles?.vehicles) {
+            isLoading && setIsLoading(false);
+
+            // setVehicles(
+            //     newVehicles.vehicles.filter((v) => {
+            //         const completedAtHour = parseInt(
+            //             v.trainStops[v.trainStops.length - 1].eta.split(":")[1]
+            //         );
+            //         const currentHour = new Date().getHours();
+
+            //         // lazy calculation but meh
+            //         const completedHoursAgo = Math.abs(
+            //             completedAtHour - currentHour
+            //         );
+
+            //         return (
+            //             v.status !== VehicleStatus.Cancelled &&
+            //             v.status !== VehicleStatus.Completed &&
+            //             completedHoursAgo > 2
+            //         );
+            //     })
+            // );
+            setVehicles(newVehicles.vehicles);
+        }
+    }, [newVehicles]);
+
+    useEffect(() => {
+        console.log(isLoading);
+        if (newFertagusVehicles?.vehicles) {
+            isLoading && setIsLoading(false);
+
+            setFertagusVehicles(newFertagusVehicles.vehicles);
+        }
+    }, [newFertagusVehicles]);
+
+    useEffect(() => {
+        if (vehicles && isLoading) {
             setIsLoading(false);
         }
-    }, [cpData, fertagusData]);
+        if (showPopup && selectedVehicle && vehicles) {
+            const updatedSelectedVehicle =
+                vehicles?.find(
+                    (vehicle) =>
+                        vehicle.trainNumber === selectedVehicle?.trainNumber,
+                ) || null;
 
-    const cpVehiclesByTrainNumber = useMemo(
-        () => new Map(cpVehicles.map((vehicle) => [vehicle.trainNumber, vehicle])),
-        [cpVehicles],
-    );
+            setSelectedVehicle(updatedSelectedVehicle);
+        }
+    }, [vehicles]);
 
-    const fertagusVehiclesByTrainNumber = useMemo(
-        () =>
-            new Map(
-                fertagusVehicles.map((vehicle) => [
-                    vehicle.trainNumber,
-                    vehicle,
-                ]),
-            ),
-        [fertagusVehicles],
-    );
+    // if (isLoading) return <div> </div>;
 
-    const getVehicle = useCallback(
-        (agencyId: string | undefined, trainNumber: number) => {
-            if (agencyId === "FT") {
-                return fertagusVehiclesByTrainNumber.get(trainNumber);
-            }
+    // if (error) return <div>Error</div>;
 
-            return cpVehiclesByTrainNumber.get(trainNumber);
-        },
-        [cpVehiclesByTrainNumber, fertagusVehiclesByTrainNumber],
-    );
+    const stationsGeoJSON: GeoJSON = {
+        type: "FeatureCollection",
+        features:
+            stations?.stations.map((station) => ({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [
+                        parseFloat(station.longitude),
+                        parseFloat(station.latitude),
+                    ],
+                },
+                properties: { ...station, type: "station" },
+            })) || [],
+    };
 
-    const stationsGeoJSON = useMemo<GeoJSON>(
-        () => ({
-            type: "FeatureCollection",
-            features:
-                stations?.stations.map((station) => ({
-                    type: "Feature",
-                    geometry: {
-                        type: "Point",
-                        coordinates: [
-                            parseFloat(station.longitude),
-                            parseFloat(station.latitude),
-                        ],
-                    },
-                    properties: { ...station, type: "station" },
-                })) ?? [],
-        }),
-        [stations],
-    );
+    const vehiclesGeoJSON: GeoJSON = {
+        type: "FeatureCollection",
+        features: [],
+    };
 
-    const makeVehiclesGeoJSON = useCallback(
-        (vehicles: EnrichedVehicle[]): GeoJSON => ({
-            type: "FeatureCollection",
-            features: vehicles
-                .filter((vehicle) => vehicle.latitude && vehicle.longitude)
-                .map((vehicle) => ({
-                    type: "Feature",
-                    geometry: {
-                        type: "Point",
-                        coordinates: [
-                            parseFloat(vehicle.longitude),
-                            parseFloat(vehicle.latitude),
-                        ],
-                    },
-                    properties: { ...vehicle, type: "vehicle" },
-                })),
-        }),
-        [],
-    );
+    async function fetchStationArrivals(
+        stationCode: string,
+        agencyIds?: string,
+    ) {
+        const url = agencyIds
+            ? `/api/stations/${stationCode}/arrivals?agencyIds=${encodeURIComponent(agencyIds)}`
+            : `/api/stations/${stationCode}/arrivals`;
 
-    // each source is memoized independently: cp updates do not rebuild ft's source.
-    const cpVehiclesGeoJSON = useMemo(
-        () => makeVehiclesGeoJSON(cpVehicles),
-        [cpVehicles, makeVehiclesGeoJSON],
-    );
+        const response = await fetch(url);
+        return (await response.json()) as { arrivals: TrainArrival[] };
+    }
 
-    const fertagusVehiclesGeoJSON = useMemo(
-        () => makeVehiclesGeoJSON(fertagusVehicles),
-        [fertagusVehicles, makeVehiclesGeoJSON],
-    );
-
-    const fetchStationArrivals = useCallback(
-        async (stationCode: string, agencyIds?: string) => {
-            const url = agencyIds
-                ? `/api/stations/${stationCode}/arrivals?agencyIds=${encodeURIComponent(agencyIds)}`
-                : `/api/stations/${stationCode}/arrivals`;
-
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`failed to fetch arrivals: ${response.status}`);
-            }
-
-            return (await response.json()) as { arrivals: TrainArrival[] };
-        },
-        [],
-    );
-
-    const mergeArrivals = useCallback(
-        (existing: TrainArrival, incoming: TrainArrival): TrainArrival => ({
+    function mergeArrivals(
+        existing: TrainArrival,
+        incoming: TrainArrival,
+    ): TrainArrival {
+        return {
             ...existing,
             ...incoming,
             trainService: incoming.trainService ?? existing.trainService,
@@ -272,235 +402,236 @@ function Home() {
             supression: incoming.supression ?? existing.supression,
             ETA: incoming.ETA ?? existing.ETA,
             ETD: incoming.ETD ?? existing.ETD,
-        }),
-        [],
-    );
-
-    const parseArrivalsForStation = useCallback(
-        (stationCode: string, arrivals: TrainArrival[]) =>
-            arrivals
-                .filter(
-                    (arrival) =>
-                        !arrival.supression &&
-                        (arrival.ETA !== null ||
-                            arrival.ETD !== null ||
-                            arrival.delay !== null),
-                )
-                .map((arrival) => {
-                    const hasEtaOrEtd =
-                        arrival.ETA !== null || arrival.ETD !== null;
-
-                    const arrivalTime = String(
-                        arrival.ETA ??
-                        arrival.ETD ??
-                        arrival.arrivalTime ??
-                        arrival.departureTime,
-                    );
-
-                    const parsedArrival = stationCode.startsWith("71-")
-                        ? parseHHMMInTimeZone(arrivalTime, "Europe/Madrid")
-                        : parseHHMM(arrivalTime);
-
-                    if (!parsedArrival) return null;
-
-                    let durationToArrivalMinutes = Math.round(
-                        (parsedArrival.getTime() - Date.now()) / 60000,
-                    );
-
-                    if (!hasEtaOrEtd) {
-                        durationToArrivalMinutes += arrival.delay ?? 0;
-                    }
-
-                    return {
-                        ...arrival,
-                        durationToArrivalMinutes,
-                    };
-                })
-                .filter(
-                    (
-                        arrival,
-                    ): arrival is TrainArrival & {
-                        durationToArrivalMinutes: number;
-                    } => arrival !== null,
-                ),
-        [],
-    );
-
-    const mergeParsedArrivals = useCallback(
-        (
-            existing: (TrainArrival & {
-                durationToArrivalMinutes: number;
-            })[],
-            incoming: (TrainArrival & {
-                durationToArrivalMinutes: number;
-            })[],
-        ) =>
-            incoming
-                .reduce(
-                    (accumulator, arrival) => {
-                        const existingIndex = accumulator.findIndex(
-                            (candidate) =>
-                                candidate.trainNumber === arrival.trainNumber,
-                        );
-
-                        if (existingIndex === -1) {
-                            accumulator.push(arrival);
-                        } else {
-                            accumulator[existingIndex] = {
-                                ...mergeArrivals(
-                                    accumulator[existingIndex],
-                                    arrival,
-                                ),
-                                durationToArrivalMinutes:
-                                    arrival.durationToArrivalMinutes,
-                            };
-                        }
-
-                        return accumulator;
-                    },
-                    [...existing],
-                )
-                .sort(
-                    (a, b) =>
-                        a.durationToArrivalMinutes -
-                        b.durationToArrivalMinutes,
-                ),
-        [mergeArrivals],
-    );
-
-    const fetchAndSetSelectedStationNextArrivals = useCallback(() => {
-        if (!selectedStation) return;
-
-        const requestId = ++arrivalsRequestIdRef.current;
-        const stationCode = selectedStation.code;
-
-        if (!selectedStationNextArrivalsRef.current) {
-            setIsLoadingArrivals(true);
-        }
-
-        const applyArrivals = (
-            arrivals: TrainArrival[],
-            shouldClearLoading = false,
-        ) => {
-            if (requestId !== arrivalsRequestIdRef.current) return;
-
-            const parsedArrivals = parseArrivalsForStation(
-                stationCode,
-                arrivals,
-            );
-
-            setSelectedStationNextArrivals(
-                selectedStationNextArrivalsRef.current
-                    ? mergeParsedArrivals(
-                        selectedStationNextArrivalsRef.current,
-                        parsedArrivals,
-                    )
-                    : parsedArrivals,
-            );
-
-            if (shouldClearLoading) {
-                setIsLoadingArrivals(false);
-            }
         };
+    }
 
-        // cp/default source controls the loading state; ft remains optional.
-        fetchStationArrivals(stationCode)
-            .then((data) => applyArrivals(data.arrivals, true))
-            .catch(() => {
-                if (requestId === arrivalsRequestIdRef.current) {
+    function parseArrivalsForStation(
+        stationCode: string,
+        arrivals: TrainArrival[],
+    ) {
+        return arrivals
+            // only show realtime for now, no static schedule arrivals
+            .filter(
+                (a) =>
+                    !a.supression &&
+                    (a.ETA !== null || a.ETD !== null || a.delay !== null),
+            )
+            .map((arrival) => {
+                const hasEtaOrEtd = arrival.ETA !== null || arrival.ETD !== null;
+                const arrivalTime = String(
+                    arrival.ETA ??
+                    arrival.ETD ??
+                    arrival.arrivalTime ??
+                    arrival.departureTime,
+                );
+
+                let parsedArrival: Date | null = null;
+
+                // stations with codes starting with "71-" are in spain (tz Europe/Madrid)
+                if (stationCode.startsWith("71-")) {
+                    parsedArrival = parseHHMMInTimeZone(
+                        arrivalTime,
+                        "Europe/Madrid",
+                    );
+                } else {
+                    parsedArrival = parseHHMM(arrivalTime);
+                }
+
+                if (!parsedArrival) {
+                    return null;
+                }
+
+                let durationToArrivalMinutes = Math.round(
+                    (parsedArrival.getTime() - Date.now()) / 60000,
+                );
+
+                // if no et* consider scheduled arrival + delay as realtime arrival
+                if (!hasEtaOrEtd) durationToArrivalMinutes += arrival.delay ?? 0;
+
+                return {
+                    ...arrival,
+                    durationToArrivalMinutes,
+                };
+            })
+            .filter(
+                (
+                    arrival,
+                ): arrival is TrainArrival & {
+                    durationToArrivalMinutes: number;
+                } => arrival !== null,
+            );
+    }
+
+    function mergeParsedArrivals(
+        existing: (TrainArrival & { durationToArrivalMinutes: number })[],
+        incoming: (TrainArrival & { durationToArrivalMinutes: number })[],
+    ) {
+        return incoming.reduce((accumulator, arrival) => {
+            const existingIndex = accumulator.findIndex(
+                (candidate) => candidate.trainNumber === arrival.trainNumber,
+            );
+
+            if (existingIndex === -1) {
+                accumulator.push(arrival);
+                return accumulator;
+            }
+
+            accumulator[existingIndex] = mergeArrivals(
+                accumulator[existingIndex],
+                arrival,
+            ) as TrainArrival & { durationToArrivalMinutes: number };
+            return accumulator;
+        }, [...existing]).sort(
+            (a, b) => a.durationToArrivalMinutes - b.durationToArrivalMinutes,
+        );;
+    }
+
+    vehicles?.forEach((vehicle) => {
+        // generically do not show vehicles with invalid coordinates
+        if (vehicle.latitude && vehicle.longitude) {
+            vehiclesGeoJSON.features.push({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [
+                        parseFloat(vehicle.longitude),
+                        parseFloat(vehicle.latitude),
+                    ],
+                },
+                properties: { ...vehicle, type: "vehicle" },
+            });
+        }
+    });
+
+    fertagusVehicles?.forEach((vehicle) => {
+        // generically do not show vehicles with invalid coordinates
+        if (vehicle.latitude && vehicle.longitude) {
+            vehiclesGeoJSON.features.push({
+                type: "Feature",
+                geometry: {
+                    type: "Point",
+                    coordinates: [
+                        parseFloat(vehicle.longitude),
+                        parseFloat(vehicle.latitude),
+                    ],
+                },
+                properties: { ...vehicle, type: "vehicle" },
+            });
+        }
+    });
+
+    function fetchAndSetSelectedStationNextArrivals() {
+        if (selectedStation) {
+            const requestId = ++arrivalsRequestIdRef.current;
+            if (!selectedStationNextArrivalsRef.current)
+                setIsLoadingArrivals(true);
+            const stationCode = selectedStation.code;
+            const applyArrivals = (
+                arrivals: TrainArrival[],
+                shouldClearLoading = false,
+            ) => {
+                if (requestId !== arrivalsRequestIdRef.current) {
+                    return;
+                }
+
+                const parsedArrivals = parseArrivalsForStation(
+                    stationCode,
+                    arrivals,
+                );
+
+                setSelectedStationNextArrivals(
+                    selectedStationNextArrivalsRef.current
+                        ? mergeParsedArrivals(
+                            selectedStationNextArrivalsRef.current,
+                            parsedArrivals,
+                        )
+                        : parsedArrivals,
+                );
+
+                if (shouldClearLoading) {
                     setIsLoadingArrivals(false);
                 }
-            });
+            };
 
-        if (FERTAGUS_STATION_IDS.includes(stationCode)) {
-            fetchStationArrivals(stationCode, "FT")
-                .then((data) => applyArrivals(data.arrivals))
+            fetchStationArrivals(stationCode)
+                .then((data) => {
+                    applyArrivals(data.arrivals, true);
+                })
                 .catch(() => {
-                    // ft is optional.
+                    if (requestId === arrivalsRequestIdRef.current) {
+                        setIsLoadingArrivals(false);
+                    }
                 });
+
+            if (FERTAGUS_STATION_IDS.includes(stationCode)) {
+                fetchStationArrivals(stationCode, "FT")
+                    .then((data) => {
+                        applyArrivals(data.arrivals);
+                    })
+                    .catch(() => {
+                        // FT is optional; keep whatever data we already showed.
+                    });
+            }
         }
-    }, [
-        fetchStationArrivals,
-        mergeParsedArrivals,
-        parseArrivalsForStation,
-        selectedStation,
-        setSelectedStationNextArrivals,
-    ]);
+    }
 
     useEffect(() => {
-        let intervalId: ReturnType<typeof setInterval> | null = null;
+        let intervalId: NodeJS.Timeout | null = null;
 
         if (selectedStation && showStationPopup) {
             fetchAndSetSelectedStationNextArrivals();
             intervalId = setInterval(
                 fetchAndSetSelectedStationNextArrivals,
-                5_000,
+                5000,
             );
         } else {
-            arrivalsRequestIdRef.current++;
             setSelectedStationNextArrivals(null);
             setIsLoadingArrivals(false);
         }
 
         return () => {
-            if (intervalId) clearInterval(intervalId);
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
         };
-    }, [
-        selectedStation,
-        showStationPopup,
-        fetchAndSetSelectedStationNextArrivals,
-        setSelectedStationNextArrivals,
-    ]);
+    }, [selectedStation, showStationPopup]);
 
-    const onMouseEnter = useCallback(() => setCursor("pointer"), []);
-    const onMouseLeave = useCallback(() => setCursor("auto"), []);
+    function onStationSelected(station: Station) {
+        arrivalsRequestIdRef.current++;
+        setSelectedStationNextArrivals(null);
+        console.log("SETTING STATION:", station);
+        setSelectedStation(station);
+        setShowStationPopup(true);
+        trackUmamiEvent("station_selected", {
+            stationId: station.code,
+            stationName: station.designation,
+        });
+    }
 
-    const onStationSelected = useCallback(
-        (station: Station) => {
-            arrivalsRequestIdRef.current++;
-            setSelectedStationNextArrivals(null);
-            setSelectedStation(station);
-            setShowStationPopup(true);
-
-            trackUmamiEvent("station_selected", {
-                stationId: station.code,
-                stationName: station.designation,
-            });
-        },
-        [setSelectedStationNextArrivals],
-    );
-
-    const onVehicleSelected = useCallback((vehicle: EnrichedVehicle) => {
+    function onVehicleSelected(vehicle: EnrichedVehicle) {
+        console.log("SETTING VEHICLE:", vehicle);
         setSelectedVehicle(vehicle);
+        console.log(selectedVehicle);
+        console.log("Trying to select vehicle", vehicle);
+        console.log("SelectedVehicle", selectedVehicle);
         setShowPopup(true);
-
+        setActiveBottomSheetDetent(1);
         trackUmamiEvent("vehicle_selected", {
             trainNumber: vehicle.trainNumber,
-            agencyId: vehicle.agencyId,
             status: vehicle.status,
         });
-    }, []);
+    }
 
-    const handleLayerClick = useCallback(
-        (event: MapLayerMouseEvent) => {
-            const feature = event.features?.[0];
+    const handleLayerClick = (event: MapLayerMouseEvent) => {
+        console.log("MapClickEvent", event);
+        if (event?.features?.[0]) {
+            console.log(event?.features?.[0].properties.type);
+            console.log(event?.features?.[0]);
 
-            if (!feature) {
-                setShowPopup(false);
-                setShowStationPopup(false);
-                setSelectedVehicle(null);
-                setSelectedStation(null);
-                setSelectedStationNextArrivals(null);
-                return;
-            }
-
-            const type = feature.properties?.type;
-
-            if (type === "vehicle") {
-                const vehicle = feature.properties as EnrichedVehicle & {
-                    type: string;
-                };
-
+            if (event?.features?.[0].properties.type === "vehicle") {
+                const vehicle = event?.features?.[0]
+                    .properties as EnrichedVehicle;
+                // idk why but nested objects are stringified in the event properties??
                 try {
                     if (vehicle.service) {
                         vehicle.service = JSON.parse(
@@ -522,74 +653,227 @@ function Home() {
                             vehicle.gtfs as unknown as string,
                         ) as EnrichedVehicle["gtfs"];
                     }
+                    // vehicle.trainStops = JSON.parse(
+                    //     vehicle.trainStops as unknown as string
+                    // ) as TrainStop[];
+                    // if (vehicle.stop)
+                    //     vehicle.stop = JSON.parse(
+                    //         vehicle.stop as unknown as string
+                    //     ) as TrainStop;
                     if (vehicle.units) {
                         vehicle.units = JSON.parse(
                             vehicle.units as unknown as string,
                         ) as string[];
                     }
-
                     onVehicleSelected(vehicle);
-                } catch (error) {
-                    console.error("error parsing vehicle data", error);
+                } catch (e) {
+                    console.log("Error parsing vehicle data", e);
                 }
-            } else if (type === "station") {
-                onStationSelected(feature.properties as Station);
             }
-        },
-        [onStationSelected, onVehicleSelected, setSelectedStationNextArrivals],
-    );
 
-    const handlePopupClose = useCallback(() => {
+            if (event?.features?.[0].properties.type === "station") {
+                const station = event?.features?.[0].properties as Station;
+                onStationSelected(station);
+            }
+        } else {
+            console.log("no feature clicked");
+            setShowPopup(false);
+            setShowStationPopup(false);
+            setSelectedVehicle(null);
+            setSelectedStation(null);
+            setSelectedStationNextArrivals(null);
+        }
+    };
+
+    const handlePopupClose = () => {
         setShowPopup(false);
-        setSelectedVehicle(null);
-    }, []);
 
-    const handleStationPopupClose = useCallback(() => {
-        arrivalsRequestIdRef.current++;
+        // TODO: test this
+        setSelectedVehicle(null);
+        setActiveBottomSheetDetent(0);
+    };
+
+    const handleStationPopupClose = () => {
         setShowStationPopup(false);
         setSelectedStation(null);
         setSelectedStationNextArrivals(null);
-    }, []);
+    };
 
-    const handleSearchVehicleSelect = useCallback(
-        (vehicle: EnrichedVehicle) => {
-            onVehicleSelected(vehicle);
-            map?.flyTo({
-                center: [
-                    parseFloat(vehicle.longitude),
-                    parseFloat(vehicle.latitude),
-                ],
-                zoom: 15,
-                essential: true,
-            });
-            setShowSearchOverlay(false);
+    const handleSearchVehicleSelect = (vehicle: EnrichedVehicle) => {
+        onVehicleSelected(vehicle);
+        map?.flyTo({
+            center: [
+                parseFloat(vehicle.longitude),
+                parseFloat(vehicle.latitude),
+            ],
+            zoom: 15,
+            essential: true, // this animation is considered essential with respect to prefers-reduced-motion
+        });
+        setShowSearchOverlay(false);
+    };
+
+    const handleSearchStationSelect = (station: Station) => {
+        onStationSelected(station);
+        // setSelectedVehicle(null);
+        setActiveBottomSheetDetent(0);
+        map?.flyTo({
+            center: [
+                parseFloat(station.longitude),
+                parseFloat(station.latitude),
+            ],
+            zoom: 14,
+            essential: true,
+        });
+        setShowSearchOverlay(false);
+    };
+
+    // const vehiclesLayerStyle: SymbolLayer = {
+    //     source: "vehicles",
+    //     id: "vehicle",
+    //     type: "symbol",
+    //     layout: {
+    //         "icon-image": "train-icon",
+    //         "icon-allow-overlap": true,
+    //         "icon-ignore-placement": true,
+    //         "icon-anchor": "center",
+    //         "symbol-placement": "point",
+    //         "icon-rotation-alignment": "map",
+    //         "icon-size": [
+    //             "interpolate",
+    //             ["linear"],
+    //             ["zoom"],
+    //             10,
+    //             0.1,
+    //             20,
+    //             0.4,
+    //         ],
+    //         "icon-offset": [0, 0],
+    //         "icon-rotate": ["get", "bearing"],
+    //     },
+    // };
+
+    const vehiclesLayerStyle: CircleLayer = {
+        source: "vehicles",
+        id: "vehicle",
+        type: "circle",
+        paint: {
+            "circle-color": [
+                "case",
+                ["==", ["get", "status"], "CANCELLED"],
+                "#D7263D", // strong red
+                ["==", ["get", "status"], "COMPLETED"],
+                "#808080", // gray
+                ["==", ["get", "agencyId"], "FT"],
+                "#C74F4F", // fertagus red
+                "#388344", // default green
+            ],
+            "circle-radius": 5,
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#ffffff",
         },
-        [map, onVehicleSelected],
-    );
+    };
 
-    const handleSearchStationSelect = useCallback(
-        (station: Station) => {
-            onStationSelected(station);
-            map?.flyTo({
-                center: [
-                    parseFloat(station.longitude),
-                    parseFloat(station.latitude),
-                ],
-                zoom: 14,
-                essential: true,
-            });
-            setShowSearchOverlay(false);
+    const vehiclesArrowsLayerStyle: SymbolLayer = {
+        source: "vehicles",
+        id: "vehicle-arrow",
+        type: "symbol",
+        filter: ["all", ["has", "bearing"], ["!=", ["get", "bearing"], ["literal", null]]],
+        layout: {
+            "icon-image": "vehicle_arrow",
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+            "icon-anchor": "center",
+            "symbol-placement": "point",
+            "icon-rotation-alignment": "map",
+            "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.2, 20, 0.2],
+            "icon-offset": [0, -12],
+            "icon-rotate": ["get", "bearing"],
         },
-        [map, onStationSelected],
-    );
+        paint: {
+            "icon-opacity": [
+                "interpolate",
+                ["exponential", 1.5],
+                ["zoom"],
+                8, 0,
+                10, 1
+            ],
+        },
+    };
 
-    const onFlyToTrain = useCallback(
-        (trainNumber: number, agencyId?: string) => {
-            const vehicle = getVehicle(agencyId, trainNumber);
-            if (!vehicle) return;
+    const stationsLayerStyle: CircleLayer = {
+        source: "stations",
+        id: "station",
+        type: "circle",
+        minzoom: 7,
+        paint: {
+            "circle-color": "#7fb3d5",
+            "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                7,
+                1.5,
+                12,
+                2.5,
+            ],
+            "circle-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                7,
+                0.45,
+                12,
+                0.65,
+            ],
+            "circle-stroke-width": 1,
+            "circle-stroke-color": "#0b1a2a",
+            "circle-stroke-opacity": 0.8,
+        },
+    };
 
-            handlePopupClose();
+    const stationsHitboxLayerStyle: CircleLayer = {
+        source: "stations",
+        id: "station-hitbox",
+        type: "circle",
+        minzoom: 7,
+        paint: {
+            // Almost invisible, but large enough to make small station markers easy to click.
+            "circle-color": "#7fb3d5",
+            "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                7,
+                10,
+                12,
+                14,
+            ],
+            "circle-opacity": 0.01,
+            "circle-stroke-width": 0,
+        },
+    };
 
+    const selectedLineLayerStyle: LineLayer = {
+        source: "line",
+        id: "line",
+        type: "line",
+        paint: {
+            "line-color": "#cb1a1a",
+            "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2, 20, 12],
+            // "line-width": 4,
+            "line-opacity": 0.8,
+            // "line-pattern": "arrow",
+        },
+        layout: {
+            "line-cap": "round",
+            "line-join": "round",
+        },
+    };
+
+    function onFlyToTrain(trainNumber: number) {
+        handlePopupClose();
+        const vehicle = vehicles?.find((v) => v.trainNumber == trainNumber);
+        if (vehicle) {
             map?.flyTo({
                 center: [
                     parseFloat(vehicle.longitude),
@@ -600,202 +884,55 @@ function Home() {
             });
 
             onVehicleSelected(vehicle);
-        },
-        [getVehicle, handlePopupClose, map, onVehicleSelected],
-    );
-
-    const vehiclesLayerStyle = useMemo<CircleLayer>(
-        () => ({
-            source: "cp-vehicles",
-            id: "cp-vehicle",
-            type: "circle",
-            paint: {
-                "circle-color": [
-                    "case",
-                    ["==", ["get", "status"], "CANCELLED"],
-                    "#D7263D",
-                    ["==", ["get", "status"], "COMPLETED"],
-                    "#808080",
-                    "#388344",
-                ],
-                "circle-radius": 5,
-                "circle-stroke-width": 2,
-                "circle-stroke-color": "#ffffff",
-            },
-        }),
-        [],
-    );
-
-    const fertagusVehiclesLayerStyle = useMemo<CircleLayer>(
-        () => ({
-            source: "fertagus-vehicles",
-            id: "fertagus-vehicle",
-            type: "circle",
-            paint: {
-                "circle-color": [
-                    "case",
-                    ["==", ["get", "status"], "CANCELLED"],
-                    "#D7263D",
-                    ["==", ["get", "status"], "COMPLETED"],
-                    "#808080",
-                    "#C74F4F",
-                ],
-                "circle-radius": 5,
-                "circle-stroke-width": 2,
-                "circle-stroke-color": "#ffffff",
-            },
-        }),
-        [],
-    );
-
-    const makeArrowLayer = useCallback(
-        (source: string, id: string): SymbolLayer => ({
-            source,
-            id,
-            type: "symbol",
-            filter: [
-                "all",
-                ["has", "bearing"],
-                ["!=", ["get", "bearing"], ["literal", null]],
-            ],
-            layout: {
-                "icon-image": "vehicle_arrow",
-                "icon-allow-overlap": true,
-                "icon-ignore-placement": true,
-                "icon-anchor": "center",
-                "symbol-placement": "point",
-                "icon-rotation-alignment": "map",
-                "icon-size": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    10,
-                    0.2,
-                    20,
-                    0.2,
-                ],
-                "icon-offset": [0, -12],
-                "icon-rotate": ["get", "bearing"],
-            },
-            paint: {
-                "icon-opacity": [
-                    "interpolate",
-                    ["exponential", 1.5],
-                    ["zoom"],
-                    8,
-                    0,
-                    10,
-                    1,
-                ],
-            },
-        }),
-        [],
-    );
-
-    const cpVehiclesArrowsLayerStyle = useMemo(
-        () => makeArrowLayer("cp-vehicles", "cp-vehicle-arrow"),
-        [makeArrowLayer],
-    );
-
-    const fertagusVehiclesArrowsLayerStyle = useMemo(
-        () => makeArrowLayer("fertagus-vehicles", "fertagus-vehicle-arrow"),
-        [makeArrowLayer],
-    );
-
-    const stationsLayerStyle = useMemo<CircleLayer>(
-        () => ({
-            source: "stations",
-            id: "station",
-            type: "circle",
-            minzoom: 7,
-            paint: {
-                "circle-color": "#7fb3d5",
-                "circle-radius": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    7,
-                    1.5,
-                    12,
-                    2.5,
-                ],
-                "circle-opacity": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    7,
-                    0.45,
-                    12,
-                    0.65,
-                ],
-                "circle-stroke-width": 1,
-                "circle-stroke-color": "#0b1a2a",
-                "circle-stroke-opacity": 0.8,
-            },
-        }),
-        [],
-    );
-
-    const stationsHitboxLayerStyle = useMemo<CircleLayer>(
-        () => ({
-            source: "stations",
-            id: "station-hitbox",
-            type: "circle",
-            minzoom: 7,
-            paint: {
-                "circle-color": "#7fb3d5",
-                "circle-radius": [
-                    "interpolate",
-                    ["linear"],
-                    ["zoom"],
-                    7,
-                    10,
-                    12,
-                    14,
-                ],
-                "circle-opacity": 0.01,
-                "circle-stroke-width": 0,
-            },
-        }),
-        [],
-    );
+        }
+    }
 
     const selectedStationNextArrivalsNext3Hours =
         selectedStationNextArrivals?.filter(
             (arrival) =>
+                arrival.durationToArrivalMinutes != null &&
                 arrival.durationToArrivalMinutes >= 0 &&
                 arrival.durationToArrivalMinutes <= 180,
         );
 
-    const selectedVehicleTripInfoUrl =
-        selectedVehicle?.agencyId === "CP"
-            ? `/api/trips/${selectedVehicle.trainNumber}`
-            : null;
-
-    const { data: currentlySelectedVehicleTripInfo } = useSWR<{
-        occupancy: number | null;
-    }>(selectedVehicleTripInfoUrl, unauthenticatedFetcher, {
-        refreshInterval: 5_000,
-    });
-
-    const searchVehicles = useMemo(
-        () => [...cpVehicles, ...fertagusVehicles],
-        [cpVehicles, fertagusVehicles],
-    );
-
     return (
         <>
+            {/* <InfoDialog
+                open={showInfoDialog}
+                onClose={() => setShowInfoDialog(false)}
+            /> */}
+            {/* <BottomSheet
+                selectedVehicle={selectedVehicle}
+                activeDetent={activeBottomSheetDetent}
+                onActiveDetentChange={setActiveBottomSheetDetent}
+            /> */}
             <Toaster richColors />
-
             <SearchOverlay
                 isOpen={showSearchOverlay}
                 onClose={() => setShowSearchOverlay(false)}
-                vehicles={searchVehicles}
+                vehicles={vehicles || []}
                 stations={stations?.stations || []}
                 onVehicleSelect={handleSearchVehicleSelect}
                 onStationSelect={handleSearchStationSelect}
             />
-
+            {/* <GeneralStatisticsOverlay
+                isOpen={showStatsOverlay}
+                onClose={() => setShowStatsOverlay(false)}
+                statistics={stats?.stats}
+            /> */}
+            {/* <CPLogo
+                style={{
+                    height: "5%",
+                    width: "auto",
+                    position: "absolute",
+                    top: "20px",
+                    left: 0,
+                    right: 0,
+                    margin: "auto",
+                    zIndex: 4,
+                    pointerEvents: "none",
+                }}
+            /> */}
             <div
                 style={{
                     position: "absolute",
@@ -840,8 +977,49 @@ function Home() {
                         style={{ height: "1em", verticalAlign: "middle" }}
                     />
                 </div>
+                {/* {(vehicles ?? []).filter(
+                    (v) => v.status === VehicleStatus.Cancelled
+                ).length > 0 && (
+                    <Pill
+                        color={BadgeColor.red}
+                        text={`${
+                            (vehicles ?? []).filter(
+                                (v) => v.status === VehicleStatus.Cancelled
+                            ).length
+                        } suprimidos`}
+                    />
+                )} */}
             </div>
-
+            {/* <TopBarButton
+                style={{ position: "absolute", zIndex: 1 }}
+                onClick={() => {
+                    resolvedTheme == "light"
+                        ? setTheme("dark")
+                        : setTheme("light");
+                }}
+            > */}
+            {/* If you use the manual theme button, there is currently no way to get back into system. */}
+            {/* <Sun
+                    className="absolute rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+                    size={26}
+                />
+                <Moon
+                    className="rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+                    size={26}
+                />
+            </TopBarButton> */}
+            {/* <TopBarButton
+                style={{
+                    position: "absolute",
+                    zIndex: 1,
+                    right: 0,
+                }}
+                onClick={() => {
+                    setShowStopsOnMap(!showStopsOnMap);
+                }}
+            >
+                <MapPinSimple size={26} />
+            </TopBarButton> */}
             <div
                 style={{
                     position: "absolute",
@@ -867,7 +1045,6 @@ function Home() {
                 >
                     <GithubLogo size={26} />
                 </TopBarButton>
-
                 <TopBarButton
                     onClick={() => {
                         i18n.changeLanguage(
@@ -875,11 +1052,10 @@ function Home() {
                         );
                         trackUmamiEvent("language_changed", {
                             source: "top_bar_button",
-                            newLanguage:
-                                i18n.language === "en" ? "pt" : "en",
+                            newLanguage: i18n.language === "en" ? "pt" : "en",
                         });
                     }}
-                    style={{ position: "relative" }}
+                    style={{ position: "relative" }} // make the button a relative container
                 >
                     <Globe size={26} />
                     <span
@@ -898,7 +1074,6 @@ function Home() {
                     </span>
                 </TopBarButton>
             </div>
-
             <TopBarButton
                 style={{
                     position: "absolute",
@@ -915,7 +1090,6 @@ function Home() {
             >
                 <MagnifyingGlass size={26} />
             </TopBarButton>
-
             <div className="loader-container">
                 <FadeInOut fade={isLoading ? Fade.none : Fade.out}>
                     <Centered style={{ background: "#000" }}>
@@ -923,7 +1097,6 @@ function Home() {
                     </Centered>
                 </FadeInOut>
             </div>
-
             <WGLMap
                 id="map"
                 initialViewState={{
@@ -931,66 +1104,54 @@ function Home() {
                     longitude: -7.969213273122932,
                     zoom: 6.4444226078908144,
                 }}
-                interactiveLayerIds={[
-                    "cp-vehicle",
-                    "fertagus-vehicle",
-                    "station",
-                    "station-hitbox",
-                ]}
+                interactiveLayerIds={["vehicle", "station", "station-hitbox"]}
                 onClick={handleLayerClick}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
                 onLoad={(evt) => {
+                    // set color of the train railways to green
                     evt.target.setPaintProperty(
                         "railway",
                         "line-color",
                         "#1c4122",
                     );
+
                     evt.target.setPaintProperty(
                         "railway_minor",
                         "line-color",
                         "#112714",
                     );
+
                     evt.target.setLayerZoomRange("railway", 4, 22);
-                    evt.target.setLayerZoomRange(
-                        "railway_minor",
-                        15,
-                        22,
-                    );
+                    evt.target.setLayerZoomRange("railway_minor", 15, 22);
                 }}
                 cursor={cursor}
             >
                 <Source id="stations" type="geojson" data={stationsGeoJSON}>
-                    <Layer {...stationsHitboxLayerStyle} />
-                    <Layer {...stationsLayerStyle} />
+                    <Layer {...stationsHitboxLayerStyle}></Layer>
+                    <Layer {...stationsLayerStyle}></Layer>
                 </Source>
-
                 <Source
-                    id="cp-vehicles"
+                    id="vehicles"
                     type="geojson"
-                    data={cpVehiclesGeoJSON}
+                    data={vehiclesGeoJSON}
+                    attribution={t("map_attribution")}
                 >
-                    <Layer {...vehiclesLayerStyle} />
-                    <Layer {...cpVehiclesArrowsLayerStyle} />
-                </Source>
-
-                <Source
-                    id="fertagus-vehicles"
-                    type="geojson"
-                    data={fertagusVehiclesGeoJSON}
-                >
-                    <Layer {...fertagusVehiclesLayerStyle} />
-                    <Layer {...fertagusVehiclesArrowsLayerStyle} />
+                    <Layer {...vehiclesLayerStyle}></Layer>
+                    <Layer {...vehiclesArrowsLayerStyle}></Layer>
                 </Source>
 
                 {showPopup && selectedVehicle && (
                     <Popup
                         longitude={parseFloat(selectedVehicle.longitude)}
                         latitude={parseFloat(selectedVehicle.latitude)}
+                        // anchor={getPopupAnchorForHeading(
+                        //     selectedVehicle.heading ?? 0
+                        // )}
                         anchor="bottom"
                         offset={20}
                         onClose={handlePopupClose}
-                        closeButton
+                        closeButton={true}
                         closeOnClick={false}
                     >
                         <div className="flex items-start absolute top-[12.5px] left-[12.5px] justify-between w-[290px]">
@@ -1001,38 +1162,31 @@ function Home() {
                                 }}
                             >
                                 {t("vehicle_popup.train", {
-                                    trainNumber:
-                                        selectedVehicle.trainNumber,
+                                    trainNumber: selectedVehicle?.trainNumber,
                                 })}
                             </h1>
 
-                            {!!selectedVehicle.units?.length && (
-                                <Pill
-                                    color={
-                                        selectedVehicle.agencyId === "FT"
-                                            ? BadgeColor.fertagusRed
-                                            : BadgeColor.green
-                                    }
-                                    wrapping
-                                >
-                                    <div className="flex items-center gap-1 pr-2 pl-2">
-                                        <Train size={15} />
-                                        <p>
-                                            {selectedVehicle.units
-                                                .map((unit) =>
-                                                    getFormattedFleetNumber(
-                                                        unit,
-                                                        selectedVehicle.agencyId,
-                                                    ),
-                                                )
-                                                .join(" + ")}
-                                        </p>
-                                    </div>
-                                </Pill>
-                            )}
+                            {selectedVehicle?.units &&
+                                selectedVehicle?.units.length > 0 && (
+                                    <Pill color={selectedVehicle.agencyId === "FT" ? BadgeColor.fertagusRed : BadgeColor.green} wrapping>
+                                        <div className="flex items-center gap-1 pr-2 pl-2">
+                                            <Train size={15} />
+                                            <p>
+                                                {selectedVehicle?.units
+                                                    .map((u) =>
+                                                        getFormattedFleetNumber(
+                                                            u,
+                                                            selectedVehicle.agencyId,
+                                                        ),
+                                                    )
+                                                    .join(" + ")}
+                                            </p>
+                                        </div>
+                                    </Pill>
+                                )}
                         </div>
 
-                        {selectedVehicle.delay === 0 && (
+                        {selectedVehicle.delay == 0 && (
                             <p
                                 style={{
                                     position: "absolute",
@@ -1043,9 +1197,7 @@ function Home() {
                                     color: "gray",
                                 }}
                             >
-                                {t(
-                                    "vehicle_popup.schedule_adherence.on_time",
-                                )}
+                                {t("vehicle_popup.schedule_adherence.on_time")}
                             </p>
                         )}
 
@@ -1091,11 +1243,11 @@ function Home() {
 
                         {!!currentlySelectedVehicleTripInfo?.occupancy && (
                             <p
-                                className={`font-bold ${currentlySelectedVehicleTripInfo
-                                    .occupancy === 1
+                                className={`font-bold ${currentlySelectedVehicleTripInfo.occupancy ===
+                                    1
                                     ? "text-green-500"
-                                    : currentlySelectedVehicleTripInfo
-                                        .occupancy === 2
+                                    : currentlySelectedVehicleTripInfo.occupancy ===
+                                        2
                                         ? "text-yellow-500"
                                         : "text-red-500"
                                     }`}
@@ -1112,45 +1264,40 @@ function Home() {
                         )}
 
                         <div className="flex items-center justify-evenly p-2">
-                            {selectedVehicle.service?.designation && (
-                                <>
-                                    <div style={{ height: "5px" }} />
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            justifyContent: "space-evenly",
-                                        }}
-                                    >
-                                        <Pill
-                                            color={
-                                                selectedVehicle.agencyId ===
-                                                    "FT"
-                                                    ? BadgeColor.subtleRed
-                                                    : BadgeColor.subtleGreen
-                                            }
+                            {selectedVehicle.service &&
+                                selectedVehicle.service.designation && (
+                                    <>
+                                        <div style={{ height: "5px" }}></div>
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "space-evenly",
+                                            }}
                                         >
-                                            <div className="flex items-center gap-1">
-                                                <p>
-                                                    {selectedVehicle.service.designation.replace(
+                                            <Pill
+                                                color={selectedVehicle.agencyId === "FT" ? BadgeColor.subtleRed : BadgeColor.subtleGreen}
+                                            >
+                                                <div className="flex items-center gap-1">
+                                                    <p>
+                                                        {selectedVehicle.service.designation.replace(
+                                                            "(Alta Qualidade)",
+                                                            "",
+                                                        )}
+                                                    </p>
+                                                    {selectedVehicle.service.designation.endsWith(
                                                         "(Alta Qualidade)",
-                                                        "",
-                                                    )}
-                                                </p>
-                                                {selectedVehicle.service.designation.endsWith(
-                                                    "(Alta Qualidade)",
-                                                ) && (
-                                                        <Sparkle
-                                                            size={15}
-                                                            weight="fill"
-                                                        />
-                                                    )}
-                                            </div>
-                                        </Pill>
-                                    </div>
-                                    <div style={{ height: "10px" }} />
-                                </>
-                            )}
-
+                                                    ) && (
+                                                            <Sparkle
+                                                                size={15}
+                                                                weight="fill"
+                                                            />
+                                                        )}
+                                                </div>
+                                            </Pill>
+                                        </div>
+                                        <div style={{ height: "10px" }}></div>
+                                    </>
+                                )}
                             {"speed" in selectedVehicle && (
                                 <div
                                     style={{
@@ -1160,17 +1307,20 @@ function Home() {
                                 >
                                     <Pill>
                                         <Gauge size={15} />
-                                        <div style={{ width: "7px" }} />
-                                        {selectedVehicle.speed?.toFixed(1)}
-                                        <div style={{ width: "7px" }} />
+
+                                        <div style={{ width: "7px" }}></div>
+                                        {selectedVehicle?.speed?.toFixed(1)}
+                                        <div style={{ width: "7px" }}></div>
                                         <p>km/h</p>
                                     </Pill>
                                 </div>
                             )}
                         </div>
 
-                        {selectedVehicle.origin?.designation &&
-                            selectedVehicle.destination?.designation && (
+                        {selectedVehicle.origin &&
+                            selectedVehicle.origin.designation &&
+                            selectedVehicle.destination &&
+                            selectedVehicle.destination.designation && (
                                 <div
                                     style={{
                                         display: "flex",
@@ -1188,6 +1338,7 @@ function Home() {
                                     >
                                         {selectedVehicle.origin.designation}
                                     </h1>
+
                                     <ArrowRight size={15} weight="bold" />
                                     <h1
                                         style={{
@@ -1195,106 +1346,260 @@ function Home() {
                                             fontSize: "1rem",
                                         }}
                                     >
-                                        {selectedVehicle.destination.designation}
+                                        {
+                                            selectedVehicle.destination
+                                                .designation
+                                        }
                                     </h1>
                                 </div>
                             )}
 
-                        {selectedVehicle.status ===
-                            VehicleStatus.Completed && (
-                                <VehicleStatusText>
-                                    {t("vehicle_popup.status.completed")}
-                                </VehicleStatusText>
-                            )}
+                        {selectedVehicle.status === VehicleStatus.Completed && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        {t("vehicle_popup.status.completed")}
+                                    </p>
+                                </div>
+                            </>
+                        )}
 
                         {selectedVehicle.status ===
                             VehicleStatus.NotStarted && (
-                                <VehicleStatusText>
-                                    {t("vehicle_popup.status.not_started")}
-                                </VehicleStatusText>
+                                <>
+                                    <div style={{ height: "5px" }}></div>
+
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        <p
+                                            style={{
+                                                color: "gray",
+                                                fontSize: "0.8rem",
+                                                fontWeight: "700",
+                                                textTransform: "uppercase",
+                                            }}
+                                        >
+                                            {t("vehicle_popup.status.not_started")}
+                                        </p>
+                                    </div>
+                                </>
                             )}
 
-                        {selectedVehicle.status ===
-                            VehicleStatus.InTransit && (
-                                <VehicleStatusText>
-                                    {t("vehicle_popup.status.in_transit")}
-                                </VehicleStatusText>
-                            )}
+                        <div style={{ height: "5px" }}></div>
+
+                        {selectedVehicle.status === VehicleStatus.InTransit && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        {t("vehicle_popup.status.in_transit")}
+                                    </p>
+                                </div>
+                            </>
+                        )}
 
                         {selectedVehicle.status === VehicleStatus.AtOrigin && (
-                            <VehicleStatusText>
-                                {t("vehicle_popup.status.at_origin")}
-                                {getStationSuffix(
-                                    stations?.stations,
-                                    selectedVehicle.lastStation,
-                                )}
-                            </VehicleStatusText>
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        {t("vehicle_popup.status.at_origin")}
+                                        {(() => {
+                                            const station =
+                                                stations?.stations?.find(
+                                                    (s) =>
+                                                        s.code ===
+                                                        selectedVehicle.lastStation,
+                                                )?.designation;
+
+                                            return station
+                                                ? ` (${station})`
+                                                : "";
+                                        })()}
+                                    </p>
+                                </div>
+                            </>
                         )}
 
                         {selectedVehicle.status === VehicleStatus.AtStation && (
-                            <VehicleStatusText>
-                                {t("vehicle_popup.status.at_station")}
-                                {getStationSuffix(
-                                    stations?.stations,
-                                    selectedVehicle.lastStation,
-                                )}
-                            </VehicleStatusText>
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        {t("vehicle_popup.status.at_station")}
+                                        {(() => {
+                                            const station =
+                                                stations?.stations?.find(
+                                                    (s) =>
+                                                        s.code ===
+                                                        selectedVehicle.lastStation,
+                                                )?.designation;
+
+                                            return station
+                                                ? ` (${station})`
+                                                : "";
+                                        })()}
+                                    </p>
+                                </div>
+                            </>
                         )}
 
                         {selectedVehicle.status === VehicleStatus.NearNext && (
-                            <VehicleStatusText center>
-                                {t("vehicle_popup.status.near_next")}
-                                <br />
-                                {getStationSuffix(
-                                    stations?.stations,
-                                    selectedVehicle.gtfs?.stopId?.replace(
-                                        "_",
-                                        "-",
-                                    ),
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                            textAlign: "center",
+                                        }}
+                                    >
+                                        {t("vehicle_popup.status.near_next")}
+                                        <br></br>
+                                        {(() => {
+                                            const station =
+                                                stations?.stations?.find(
+                                                    (s) =>
+                                                        s.code ===
+                                                        selectedVehicle.gtfs?.stopId?.replace(
+                                                            "_",
+                                                            "-",
+                                                        ),
+                                                )?.designation;
+
+                                            return station
+                                                ? ` (${station})`
+                                                : "";
+                                        })()}
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        {selectedVehicle.status === VehicleStatus.Cancelled && (
+                            <>
+                                <div style={{ height: "5px" }}></div>
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <p
+                                        style={{
+                                            color: "#d7263d",
+                                            fontSize: "0.8rem",
+                                            fontWeight: "700",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        {t("vehicle_popup.status.cancelled")}
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        <div style={{ height: "20px" }}></div>
+
+                        <div>
+                            {selectedVehicle.timestamp &&
+                                selectedVehicle.timestamp && (
+                                    <p
+                                        style={{
+                                            color: "gray",
+                                            position: "absolute",
+                                            bottom: "2px",
+                                            left: "10px",
+                                        }}
+                                    >
+                                        {t("vehicle_popup.updated_at")}:{" "}
+                                        {new Date(
+                                            selectedVehicle.timestamp,
+                                        ).toLocaleTimeString()}
+                                    </p>
                                 )}
-                            </VehicleStatusText>
-                        )}
-
-                        {selectedVehicle.status ===
-                            VehicleStatus.Cancelled && (
-                                <VehicleStatusText color="#d7263d">
-                                    {t("vehicle_popup.status.cancelled")}
-                                </VehicleStatusText>
+                            {selectedVehicle.source && (
+                                <p
+                                    style={{
+                                        color: "gray",
+                                        position: "absolute",
+                                        bottom: "2px",
+                                        right: "10px",
+                                    }}
+                                >
+                                    via {selectedVehicle.source}
+                                </p>
                             )}
-
-                        <div style={{ height: "20px" }} />
-
-                        {selectedVehicle.timestamp && (
-                            <p
-                                style={{
-                                    color: "gray",
-                                    position: "absolute",
-                                    bottom: "2px",
-                                    left: "10px",
-                                }}
-                            >
-                                {t("vehicle_popup.updated_at")}:{" "}
-                                {new Date(
-                                    selectedVehicle.timestamp,
-                                ).toLocaleTimeString()}
-                            </p>
-                        )}
-
-                        {selectedVehicle.source && (
-                            <p
-                                style={{
-                                    color: "gray",
-                                    position: "absolute",
-                                    bottom: "2px",
-                                    right: "10px",
-                                }}
-                            >
-                                via {selectedVehicle.source}
-                            </p>
-                        )}
+                        </div>
                     </Popup>
                 )}
-
                 {showStationPopup && selectedStation && (
                     <Popup
                         longitude={parseFloat(selectedStation.longitude)}
@@ -1302,7 +1607,7 @@ function Home() {
                         anchor="bottom"
                         offset={20}
                         onClose={handleStationPopupClose}
-                        closeButton
+                        closeButton={true}
                         closeOnClick={false}
                     >
                         <div>
@@ -1316,7 +1621,6 @@ function Home() {
                             >
                                 {t("station_popup.station_header")}
                             </p>
-
                             <h1
                                 style={{
                                     fontWeight: "900",
@@ -1325,18 +1629,15 @@ function Home() {
                             >
                                 {selectedStation.designation}
                             </h1>
-
-                            <div style={{ height: "10px" }} />
-
+                            <div style={{ height: "10px" }}></div>
                             <p style={{ color: "gray", opacity: 0.5 }}>
                                 {"ID: " + selectedStation.code}
                             </p>
 
-                            <div style={{ height: "15px" }} />
-
+                            <div style={{ height: "15px" }}></div>
                             {isLoadingArrivals ? (
                                 <Loader />
-                            ) : selectedStationNextArrivalsNext3Hours?.length ===
+                            ) : selectedStationNextArrivalsNext3Hours?.length ==
                                 0 ? (
                                 <p
                                     style={{
@@ -1360,8 +1661,7 @@ function Home() {
                                     >
                                         {t("station_popup.next_arrivals")}
                                     </p>
-
-                                    <div style={{ height: "5px" }} />
+                                    <div style={{ height: "5px" }}></div>
 
                                     <div
                                         style={{
@@ -1372,17 +1672,11 @@ function Home() {
                                     >
                                         {selectedStationNextArrivalsNext3Hours?.map(
                                             (arrival) => {
-                                                const vehicle = getVehicle(
-                                                    arrival.trainService?.code ===
-                                                        "FT"
-                                                        ? "FT"
-                                                        : "CP",
-                                                    arrival.trainNumber!,
-                                                );
-
                                                 return (
                                                     <div
-                                                        key={`${arrival.trainService?.code ?? "CP"}:${arrival.trainNumber}`}
+                                                        key={
+                                                            arrival.trainNumber
+                                                        }
                                                         style={{
                                                             display: "flex",
                                                             alignItems:
@@ -1401,12 +1695,7 @@ function Home() {
                                                         >
                                                             <Pill
                                                                 color={
-                                                                    arrival
-                                                                        .trainService
-                                                                        .code ===
-                                                                        "FT"
-                                                                        ? BadgeColor.fertagusRed
-                                                                        : BadgeColor.green
+                                                                    arrival.trainService.code === 'FT' ? BadgeColor.fertagusRed : BadgeColor.green
                                                                 }
                                                             >
                                                                 <p
@@ -1414,18 +1703,13 @@ function Home() {
                                                                         fontSize: 11,
                                                                     }}
                                                                 >
-                                                                    {`${arrival.trainService.code.replace(
-                                                                        "FT",
-                                                                        "U",
-                                                                    )}\u00A0${arrival.trainNumber}`}
+                                                                    {`${arrival.trainService.code.replace('FT', 'U')}\u00A0${arrival.trainNumber}`}
                                                                 </p>
                                                             </Pill>
-
                                                             <ArrowRight
                                                                 size={15}
                                                                 weight="bold"
                                                             />
-
                                                             <p
                                                                 style={{
                                                                     fontWeight:
@@ -1435,24 +1719,15 @@ function Home() {
                                                                 }}
                                                             >
                                                                 {
-                                                                    stations?.stations.find(
-                                                                        (station) =>
-                                                                            station.code ===
-                                                                            arrival
-                                                                                .trainDestination
-                                                                                .code,
-                                                                    )
-                                                                        ?.designation
+                                                                    stations?.stations.find((s) => s.code === arrival.trainDestination.code)?.designation
                                                                 }
                                                             </p>
                                                         </div>
-
                                                         <div
                                                             style={{
                                                                 width: "7px",
                                                             }}
-                                                        />
-
+                                                        ></div>
                                                         <div
                                                             style={{
                                                                 display: "flex",
@@ -1473,69 +1748,71 @@ function Home() {
                                                                     0 ? (
                                                                     <ArrivingBusAnimation color="green" />
                                                                 ) : (
-                                                                    formatDuration(
-                                                                        arrival.durationToArrivalMinutes *
-                                                                        60,
-                                                                        false,
-                                                                        true,
-                                                                    )
+                                                                    `${formatDuration(arrival.durationToArrivalMinutes! * 60, false, true)}`
                                                                 )}
                                                             </p>
-
-                                                            {vehicle && (
-                                                                <button
-                                                                    onClick={() =>
-                                                                        onFlyToTrain(
-                                                                            arrival.trainNumber!,
-                                                                            arrival
-                                                                                .trainService
-                                                                                ?.code ===
-                                                                                "FT"
-                                                                                ? "FT"
-                                                                                : "CP",
-                                                                        )
-                                                                    }
-                                                                    style={{
-                                                                        cursor: "pointer",
-                                                                    }}
-                                                                >
-                                                                    <Pill
-                                                                        color={
-                                                                            arrival
-                                                                                .trainService
-                                                                                .code ===
-                                                                                "FT"
-                                                                                ? BadgeColor.fertagusRed
-                                                                                : BadgeColor.green
+                                                            {!!vehicles?.find(
+                                                                // being done thrice
+                                                                (v) =>
+                                                                    v.trainNumber ===
+                                                                    arrival.trainNumber,
+                                                            ) && (
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            onFlyToTrain(
+                                                                                arrival.trainNumber!,
+                                                                            )
                                                                         }
-                                                                        wrapping
+                                                                        style={{
+                                                                            cursor: !!vehicles?.find(
+                                                                                (
+                                                                                    v,
+                                                                                ) =>
+                                                                                    v.trainNumber ===
+                                                                                    arrival.trainNumber,
+                                                                            )
+                                                                                ? "pointer"
+                                                                                : "default",
+                                                                        }}
                                                                     >
-                                                                        <div
-                                                                            style={{
-                                                                                display:
-                                                                                    "flex",
-                                                                                alignItems:
-                                                                                    "center",
-                                                                                gap: "5px",
-                                                                                padding:
-                                                                                    "0 5px",
-                                                                            }}
+                                                                        <Pill
+                                                                            color={
+                                                                                arrival.trainService.code === 'FT' ? BadgeColor.fertagusRed : BadgeColor.green
+                                                                            }
+                                                                            wrapping={
+                                                                                true
+                                                                            }
                                                                         >
-                                                                            <TrainIcon
-                                                                                color="white"
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                            <CaretRight
-                                                                                size={
-                                                                                    15
-                                                                                }
-                                                                            />
-                                                                        </div>
-                                                                    </Pill>
-                                                                </button>
-                                                            )}
+                                                                            <div
+                                                                                style={{
+                                                                                    display:
+                                                                                        "flex",
+                                                                                    alignItems:
+                                                                                        "center",
+                                                                                    gap: "5px",
+                                                                                    padding:
+                                                                                        "0 5px",
+                                                                                }}
+                                                                            >
+                                                                                <TrainIcon
+                                                                                    color="white"
+                                                                                    size={
+                                                                                        12
+                                                                                    }
+                                                                                // sizeRatio={
+                                                                                //     0.5
+                                                                                // }
+                                                                                />
+
+                                                                                <CaretRight
+                                                                                    size={
+                                                                                        15
+                                                                                    }
+                                                                                />
+                                                                            </div>
+                                                                        </Pill>
+                                                                    </button>
+                                                                )}
                                                         </div>
                                                     </div>
                                                 );
@@ -1550,50 +1827,6 @@ function Home() {
             </WGLMap>
         </>
     );
-}
-
-function VehicleStatusText({
-    children,
-    color = "gray",
-    center = false,
-}: {
-    children: React.ReactNode;
-    color?: string;
-    center?: boolean;
-}) {
-    return (
-        <>
-            <div style={{ height: "10px" }} />
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "center",
-                }}
-            >
-                <p
-                    style={{
-                        color,
-                        fontSize: "0.8rem",
-                        fontWeight: "700",
-                        textTransform: "uppercase",
-                        textAlign: center ? "center" : undefined,
-                    }}
-                >
-                    {children}
-                </p>
-            </div>
-        </>
-    );
-}
-
-function getStationSuffix(
-    stations: Station[] | undefined,
-    stationCode: string | undefined,
-) {
-    if (!stationCode) return "";
-
-    const station = stations?.find((s) => s.code === stationCode);
-    return station ? ` (${station.designation})` : "";
 }
 
 export default dynamic(() => Promise.resolve(Home), {
