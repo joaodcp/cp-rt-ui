@@ -182,7 +182,6 @@ function Home() {
     const [activeBottomSheetDetent, setActiveBottomSheetDetent] =
         useState<number>(0);
 
-    // Keyboard shortcut for search overlay (cmd+k / ctrl+j)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey && e.key === "k") || (e.ctrlKey && e.key === "j") || (!e.metaKey && !e.ctrlKey && e.key === "/")) {
@@ -201,8 +200,6 @@ function Home() {
 
     const onMouseEnter = useCallback(() => setCursor("pointer"), []);
     const onMouseLeave = useCallback(() => setCursor("auto"), []);
-
-    // const [isMapLoading, setIsMapLoading] = useState<boolean>(true);
 
     const { map } = useMap();
 
@@ -223,10 +220,6 @@ function Home() {
 
         loadSvgImage("vehicle_arrow_w.svg", "vehicle_arrow");
     }, [map]);
-
-    // useEffect(() => {
-    //     setIsMapLoading(!map?.loaded());
-    // }, [map?.loaded()]);
 
     const [toastId, _setToastId] = useState<string | number | null>(null);
 
@@ -299,25 +292,6 @@ function Home() {
         if (newVehicles?.vehicles) {
             isLoading && setIsLoading(false);
 
-            // setVehicles(
-            //     newVehicles.vehicles.filter((v) => {
-            //         const completedAtHour = parseInt(
-            //             v.trainStops[v.trainStops.length - 1].eta.split(":")[1]
-            //         );
-            //         const currentHour = new Date().getHours();
-
-            //         // lazy calculation but meh
-            //         const completedHoursAgo = Math.abs(
-            //             completedAtHour - currentHour
-            //         );
-
-            //         return (
-            //             v.status !== VehicleStatus.Cancelled &&
-            //             v.status !== VehicleStatus.Completed &&
-            //             completedHoursAgo > 2
-            //         );
-            //     })
-            // );
             setVehicles(newVehicles.vehicles);
         }
     }, [newVehicles]);
@@ -335,20 +309,16 @@ function Home() {
         if (vehicles && isLoading) {
             setIsLoading(false);
         }
-        if (showPopup && selectedVehicle && vehicles) {
+        if (showPopup && selectedVehicle) {
             const updatedSelectedVehicle =
-                [...vehicles, ...fertagusVehicles]?.find(
+                [...vehicles, ...fertagusVehicles].find(
                     (vehicle) =>
                         vehicle.trainNumber === selectedVehicle?.trainNumber,
                 ) || null;
 
             setSelectedVehicle(updatedSelectedVehicle);
         }
-    }, [vehicles]);
-
-    // if (isLoading) return <div> </div>;
-
-    // if (error) return <div>Error</div>;
+    }, [vehicles, fertagusVehicles]);
 
     const stationsGeoJSON: GeoJSON = {
         type: "FeatureCollection",
@@ -410,7 +380,6 @@ function Home() {
         arrivals: TrainArrival[],
     ) {
         return arrivals
-            // only show realtime for now, no static schedule arrivals
             .filter(
                 (a) =>
                     !a.supression &&
@@ -427,7 +396,6 @@ function Home() {
 
                 let parsedArrival: Date | null = null;
 
-                // stations with codes starting with "71-" are in spain (tz Europe/Madrid)
                 if (stationCode.startsWith("71-")) {
                     parsedArrival = parseHHMMInTimeZone(
                         arrivalTime,
@@ -445,7 +413,6 @@ function Home() {
                     (parsedArrival.getTime() - Date.now()) / 60000,
                 );
 
-                // if no et* consider scheduled arrival + delay as realtime arrival
                 if (!hasEtaOrEtd) durationToArrivalMinutes += arrival.delay ?? 0;
 
                 return {
@@ -487,7 +454,6 @@ function Home() {
     }
 
     vehicles?.forEach((vehicle) => {
-        // generically do not show vehicles with invalid coordinates
         if (vehicle.latitude && vehicle.longitude) {
             vehiclesGeoJSON.features.push({
                 type: "Feature",
@@ -504,7 +470,6 @@ function Home() {
     });
 
     fertagusVehicles?.forEach((vehicle) => {
-        // generically do not show vehicles with invalid coordinates
         if (vehicle.latitude && vehicle.longitude) {
             vehiclesGeoJSON.features.push({
                 type: "Feature",
@@ -568,9 +533,7 @@ function Home() {
                     .then((data) => {
                         applyArrivals(data.arrivals);
                     })
-                    .catch(() => {
-                        // FT is optional; keep whatever data we already showed.
-                    });
+                    .catch(() => { });
             }
         }
     }
@@ -631,7 +594,6 @@ function Home() {
             if (event?.features?.[0].properties.type === "vehicle") {
                 const vehicle = event?.features?.[0]
                     .properties as EnrichedVehicle;
-                // idk why but nested objects are stringified in the event properties??
                 try {
                     if (vehicle.service) {
                         vehicle.service = JSON.parse(
@@ -653,13 +615,6 @@ function Home() {
                             vehicle.gtfs as unknown as string,
                         ) as EnrichedVehicle["gtfs"];
                     }
-                    // vehicle.trainStops = JSON.parse(
-                    //     vehicle.trainStops as unknown as string
-                    // ) as TrainStop[];
-                    // if (vehicle.stop)
-                    //     vehicle.stop = JSON.parse(
-                    //         vehicle.stop as unknown as string
-                    //     ) as TrainStop;
                     if (vehicle.units) {
                         vehicle.units = JSON.parse(
                             vehicle.units as unknown as string,
@@ -687,8 +642,6 @@ function Home() {
 
     const handlePopupClose = () => {
         setShowPopup(false);
-
-        // TODO: test this
         setSelectedVehicle(null);
         setActiveBottomSheetDetent(0);
     };
@@ -707,14 +660,13 @@ function Home() {
                 parseFloat(vehicle.latitude),
             ],
             zoom: 15,
-            essential: true, // this animation is considered essential with respect to prefers-reduced-motion
+            essential: true,
         });
         setShowSearchOverlay(false);
     };
 
     const handleSearchStationSelect = (station: Station) => {
         onStationSelected(station);
-        // setSelectedVehicle(null);
         setActiveBottomSheetDetent(0);
         map?.flyTo({
             center: [
@@ -727,31 +679,6 @@ function Home() {
         setShowSearchOverlay(false);
     };
 
-    // const vehiclesLayerStyle: SymbolLayer = {
-    //     source: "vehicles",
-    //     id: "vehicle",
-    //     type: "symbol",
-    //     layout: {
-    //         "icon-image": "train-icon",
-    //         "icon-allow-overlap": true,
-    //         "icon-ignore-placement": true,
-    //         "icon-anchor": "center",
-    //         "symbol-placement": "point",
-    //         "icon-rotation-alignment": "map",
-    //         "icon-size": [
-    //             "interpolate",
-    //             ["linear"],
-    //             ["zoom"],
-    //             10,
-    //             0.1,
-    //             20,
-    //             0.4,
-    //         ],
-    //         "icon-offset": [0, 0],
-    //         "icon-rotate": ["get", "bearing"],
-    //     },
-    // };
-
     const vehiclesLayerStyle: CircleLayer = {
         source: "vehicles",
         id: "vehicle",
@@ -760,12 +687,12 @@ function Home() {
             "circle-color": [
                 "case",
                 ["==", ["get", "status"], "CANCELLED"],
-                "#D7263D", // strong red
+                "#D7263D",
                 ["==", ["get", "status"], "COMPLETED"],
-                "#808080", // gray
+                "#808080",
                 ["==", ["get", "agencyId"], "FT"],
-                "#C74F4F", // fertagus red
-                "#388344", // default green
+                "#C74F4F",
+                "#388344",
             ],
             "circle-radius": 5,
             "circle-stroke-width": 2,
@@ -837,7 +764,6 @@ function Home() {
         type: "circle",
         minzoom: 7,
         paint: {
-            // Almost invisible, but large enough to make small station markers easy to click.
             "circle-color": "#7fb3d5",
             "circle-radius": [
                 "interpolate",
@@ -860,9 +786,7 @@ function Home() {
         paint: {
             "line-color": "#cb1a1a",
             "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2, 20, 12],
-            // "line-width": 4,
             "line-opacity": 0.8,
-            // "line-pattern": "arrow",
         },
         layout: {
             "line-cap": "round",
@@ -897,15 +821,6 @@ function Home() {
 
     return (
         <>
-            {/* <InfoDialog
-                open={showInfoDialog}
-                onClose={() => setShowInfoDialog(false)}
-            /> */}
-            {/* <BottomSheet
-                selectedVehicle={selectedVehicle}
-                activeDetent={activeBottomSheetDetent}
-                onActiveDetentChange={setActiveBottomSheetDetent}
-            /> */}
             <Toaster richColors />
             <SearchOverlay
                 isOpen={showSearchOverlay}
@@ -915,24 +830,6 @@ function Home() {
                 onVehicleSelect={handleSearchVehicleSelect}
                 onStationSelect={handleSearchStationSelect}
             />
-            {/* <GeneralStatisticsOverlay
-                isOpen={showStatsOverlay}
-                onClose={() => setShowStatsOverlay(false)}
-                statistics={stats?.stats}
-            /> */}
-            {/* <CPLogo
-                style={{
-                    height: "5%",
-                    width: "auto",
-                    position: "absolute",
-                    top: "20px",
-                    left: 0,
-                    right: 0,
-                    margin: "auto",
-                    zIndex: 4,
-                    pointerEvents: "none",
-                }}
-            /> */}
             <div
                 style={{
                     position: "absolute",
@@ -977,49 +874,7 @@ function Home() {
                         style={{ height: "1em", verticalAlign: "middle" }}
                     />
                 </div>
-                {/* {(vehicles ?? []).filter(
-                    (v) => v.status === VehicleStatus.Cancelled
-                ).length > 0 && (
-                    <Pill
-                        color={BadgeColor.red}
-                        text={`${
-                            (vehicles ?? []).filter(
-                                (v) => v.status === VehicleStatus.Cancelled
-                            ).length
-                        } suprimidos`}
-                    />
-                )} */}
             </div>
-            {/* <TopBarButton
-                style={{ position: "absolute", zIndex: 1 }}
-                onClick={() => {
-                    resolvedTheme == "light"
-                        ? setTheme("dark")
-                        : setTheme("light");
-                }}
-            > */}
-            {/* If you use the manual theme button, there is currently no way to get back into system. */}
-            {/* <Sun
-                    className="absolute rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-                    size={26}
-                />
-                <Moon
-                    className="rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-                    size={26}
-                />
-            </TopBarButton> */}
-            {/* <TopBarButton
-                style={{
-                    position: "absolute",
-                    zIndex: 1,
-                    right: 0,
-                }}
-                onClick={() => {
-                    setShowStopsOnMap(!showStopsOnMap);
-                }}
-            >
-                <MapPinSimple size={26} />
-            </TopBarButton> */}
             <div
                 style={{
                     position: "absolute",
@@ -1055,7 +910,7 @@ function Home() {
                             newLanguage: i18n.language === "en" ? "pt" : "en",
                         });
                     }}
-                    style={{ position: "relative" }} // make the button a relative container
+                    style={{ position: "relative" }}
                 >
                     <Globe size={26} />
                     <span
@@ -1109,7 +964,6 @@ function Home() {
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
                 onLoad={(evt) => {
-                    // set color of the train railways to green
                     evt.target.setPaintProperty(
                         "railway",
                         "line-color",
@@ -1145,9 +999,6 @@ function Home() {
                     <Popup
                         longitude={parseFloat(selectedVehicle.longitude)}
                         latitude={parseFloat(selectedVehicle.latitude)}
-                        // anchor={getPopupAnchorForHeading(
-                        //     selectedVehicle.heading ?? 0
-                        // )}
                         anchor="bottom"
                         offset={20}
                         onClose={handlePopupClose}
@@ -1730,7 +1581,8 @@ function Home() {
                                                         ></div>
                                                         <div
                                                             style={{
-                                                                display: "flex",
+                                                                display:
+                                                                    "flex",
                                                                 alignItems:
                                                                     "center",
                                                                 gap: "5px",
@@ -1752,7 +1604,6 @@ function Home() {
                                                                 )}
                                                             </p>
                                                             {!![...vehicles, ...fertagusVehicles]?.find(
-                                                                // being done thrice
                                                                 (v) =>
                                                                     v.trainNumber ===
                                                                     arrival.trainNumber,
@@ -1799,9 +1650,6 @@ function Home() {
                                                                                     size={
                                                                                         12
                                                                                     }
-                                                                                // sizeRatio={
-                                                                                //     0.5
-                                                                                // }
                                                                                 />
 
                                                                                 <CaretRight
