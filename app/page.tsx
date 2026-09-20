@@ -50,6 +50,7 @@ import {
     MapLayerMouseEvent,
     PositionAnchor,
 } from "maplibre-gl";
+import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -130,6 +131,9 @@ function trackUmamiEvent(eventName: string, eventData?: Record<string, any>) {
 
 function Home() {
     const { t, i18n } = useTranslation();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialTrainFromUrl = searchParams.get("train");
     const { data: version } = useSWR("/api/version", unauthenticatedFetcher, {
         refreshInterval: 30_000,
     });
@@ -319,6 +323,22 @@ function Home() {
             setSelectedVehicle(updatedSelectedVehicle);
         }
     }, [vehicles, fertagusVehicles]);
+
+    const hasHandledInitialTrain = useRef(false);
+
+    useEffect(() => {
+        if (initialTrainFromUrl && vehicles?.length && !hasHandledInitialTrain.current) {
+            hasHandledInitialTrain.current = true;
+            const vehicle = [...vehicles, ...fertagusVehicles]?.find(
+                (v) => v.trainNumber === Number(initialTrainFromUrl),
+            );
+            if (vehicle) {
+                onVehicleSelected(vehicle);
+            } else {
+                router.push("/", { scroll: false });
+            }
+        }
+    }, [vehicles, initialTrainFromUrl]);
 
     const stationsGeoJSON: GeoJSON = {
         type: "FeatureCollection",
@@ -583,6 +603,7 @@ function Home() {
             trainNumber: vehicle.trainNumber,
             status: vehicle.status,
         });
+        router.push(`?train=${vehicle.trainNumber}`, { scroll: false });
     }
 
     const handleLayerClick = (event: MapLayerMouseEvent) => {
@@ -637,6 +658,7 @@ function Home() {
             setSelectedVehicle(null);
             setSelectedStation(null);
             setSelectedStationNextArrivals(null);
+            router.push("/", { scroll: false });
         }
     };
 
@@ -644,12 +666,14 @@ function Home() {
         setShowPopup(false);
         setSelectedVehicle(null);
         setActiveBottomSheetDetent(0);
+        router.push("/", { scroll: false });
     };
 
     const handleStationPopupClose = () => {
         setShowStationPopup(false);
         setSelectedStation(null);
         setSelectedStationNextArrivals(null);
+        router.push("/", { scroll: false });
     };
 
     const handleSearchVehicleSelect = (vehicle: EnrichedVehicle) => {
@@ -894,7 +918,6 @@ function Home() {
     };
 
     function onFlyToTrain(trainNumber: number) {
-        handlePopupClose();
         const vehicle = [...vehicles, ...fertagusVehicles]?.find((v) => v.trainNumber == trainNumber);
         if (vehicle) {
             map?.flyTo({
