@@ -700,6 +700,105 @@ function Home() {
         },
     };
 
+    function createVehiclesDelayLayerStyle(
+        id: string,
+        bearingFilter: NonNullable<CircleLayer["filter"]>,
+        translate: [number, number],
+    ): CircleLayer {
+        return {
+            source: "vehicles",
+            id,
+            type: "circle",
+            filter: [
+                "all",
+                ["has", "delay"],
+                ["!=", ["get", "delay"], ["literal", null]],
+                bearingFilter,
+            ] as CircleLayer["filter"],
+            paint: {
+                "circle-radius": 4,
+                "circle-translate": translate,
+                "circle-translate-anchor": "map",
+                "circle-color": [
+                    "case",
+                    ["<=", ["get", "delay"], 300],
+                    "#22C55E",
+                    ["<=", ["get", "delay"], 900],
+                    "#EAB308",
+                    "#EF4444",
+                ],
+                "circle-stroke-color": "#ffffff",
+                "circle-stroke-width": 1.5,
+                "circle-opacity": [
+                    "interpolate",
+                    ["exponential", 1.5],
+                    ["zoom"],
+                    8,
+                    0,
+                    10,
+                    1,
+                ],
+                "circle-stroke-opacity": [
+                    "interpolate",
+                    ["exponential", 1.5],
+                    ["zoom"],
+                    8,
+                    0,
+                    10,
+                    1,
+                ],
+            },
+        };
+    }
+
+    const vehiclesDelayLayerStyles = [
+        createVehiclesDelayLayerStyle(
+            "vehicle-delay-status-north",
+            [
+                "any",
+                [">=", ["get", "bearing"], 315],
+                ["<", ["get", "bearing"], 45],
+            ],
+            [7, 7],
+        ),
+        createVehiclesDelayLayerStyle(
+            "vehicle-delay-status-east",
+            [
+                "all",
+                [">=", ["get", "bearing"], 45],
+                ["<", ["get", "bearing"], 135],
+            ],
+            [-7, 7],
+        ),
+        createVehiclesDelayLayerStyle(
+            "vehicle-delay-status-south",
+            [
+                "all",
+                [">=", ["get", "bearing"], 135],
+                ["<", ["get", "bearing"], 225],
+            ],
+            [-7, -7],
+        ),
+        createVehiclesDelayLayerStyle(
+            "vehicle-delay-status-west",
+            [
+                "all",
+                [">=", ["get", "bearing"], 225],
+                ["<", ["get", "bearing"], 315],
+            ],
+            [7, -7],
+        ),
+        createVehiclesDelayLayerStyle(
+            "vehicle-delay-status-no-bearing",
+            [
+                "any",
+                ["!", ["has", "bearing"]],
+                ["==", ["get", "bearing"], ["literal", null]],
+            ],
+            [7, -7],
+        ),
+    ];
+
     const vehiclesArrowsLayerStyle: SymbolLayer = {
         source: "vehicles",
         id: "vehicle-arrow",
@@ -993,6 +1092,9 @@ function Home() {
                 >
                     <Layer {...vehiclesLayerStyle}></Layer>
                     <Layer {...vehiclesArrowsLayerStyle}></Layer>
+                    {vehiclesDelayLayerStyles.map((layerStyle) => (
+                        <Layer key={layerStyle.id} {...layerStyle}></Layer>
+                    ))}
                 </Source>
 
                 {showPopup && selectedVehicle && (
@@ -1060,7 +1162,7 @@ function Home() {
                                     left: "12.5px",
                                     fontWeight: "700",
                                     fontSize: "0.8rem",
-                                    color: "gray",
+                                    color: selectedVehicle.delay <= 300 ? "#22C55E" : selectedVehicle.delay <= 900 ? "#EAB308" : "#EF4444",
                                 }}
                             >
                                 {t("vehicle_popup.schedule_adherence.late", {

@@ -5,8 +5,9 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { ReactNode, useState } from "react";
 import { useTheme } from "next-themes";
 import styles from "./WGLMap.module.css";
-import { MapLayerMouseEvent, MapLibreEvent } from "maplibre-gl";
+import { MapLayerMouseEvent, MapLibreEvent, Map as MaplibreMap } from "maplibre-gl";
 import { AttributionControl } from "react-map-gl/maplibre";
+import ScaleBar from "./ScaleBar";
 
 export default function WGLMap({
     id,
@@ -30,6 +31,7 @@ export default function WGLMap({
     children: ReactNode;
 }) {
     const { resolvedTheme } = useTheme();
+    const [map, setMap] = useState<MaplibreMap | null>(null);
 
     return (
         <div className={styles.map}>
@@ -42,15 +44,17 @@ export default function WGLMap({
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
                 cursor={cursor}
-                // onMove={(evt) => console.log(evt.viewState)}
-                // mapStyle={process.env.NEXT_PUBLIC_MAP_STYLE_URL!}
                 mapStyle="https://tiles.openfreemap.org/styles/dark"
                 attributionControl={false}
-                onLoad={onLoad}
+                onLoad={(evt) => {
+                    setMap(evt.target);
+                    onLoad(evt);
+                }}
             >
                 {/* <NavigationControl /> */}
                 {children}
                 <AttributionControl compact={true} position="bottom-left" />
+                {map && <ScaleBar map={map} />}
             </Map>
         </div>
     );
