@@ -1,77 +1,87 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Map } from "maplibre-gl";
 
-function getDistancePerPx(map: Map): number {
-    const h = map.getContainer().clientHeight / 2;
-    const left = map.unproject([0, h]);
-    const right = map.unproject([1, h]);
-    return left.distanceTo(right);
+const MAX_WIDTH = 200;
+
+function getPrettyDistance(maxMeters: number): number {
+    const power = Math.pow(10, Math.floor(Math.log10(maxMeters)));
+    const normalized = maxMeters / power;
+    const multiplier = normalized >= 5 ? 5 : normalized >= 3 ? 3 : normalized >= 2 ? 2 : 1;
+    return multiplier * power;
 }
 
-function roundToPretty(val: number): number {
-    if (val <= 0) return 1;
-    const pow = Math.pow(10, Math.floor(Math.log10(val)));
-    const norm = val / pow;
-    let pretty: number;
-    if (norm <= 1.5) pretty = 1;
-    else if (norm <= 2.5) pretty = 2;
-    else if (norm <= 3.5) pretty = 3;
-    else if (norm <= 5) pretty = 5;
-    else if (norm <= 7.5) pretty = 7;
-    else pretty = 10;
-    return pretty * pow;
+function getNumSegments(totalDistance: number): number {
+    const power = Math.pow(10, Math.floor(Math.log10(totalDistance)));
+    const normalized = totalDistance / power;
+    if (normalized < 2.5) return 4;
+    if (normalized < 4) return 3;
+    return 2;
 }
 
-function getScaleData(map: Map) {
-    const distPerPx = getDistancePerPx(map);
-    const totalMeters = distPerPx * 200;
+function getScaleData(map: Map, previousDistance: number | null) {
+    const y = map.getContainer().clientHeight / 2;
+    const maxMeters = map.unproject([0, y]).distanceTo(map.unproject([MAX_WIDTH, y]));
+    let totalDistance = previousDistance ?? getPrettyDistance(maxMeters);
+    let barPxWidth = totalDistance / maxMeters * MAX_WIDTH;
 
-    let step = 1;
-    const prettySteps = [25, 50, 75, 100, 125, 150, 200, 250, 500, 1000, 2000, 5000, 10000];
-    for (const s of prettySteps) {
-        step = s;
-        if (totalMeters / s >= 2 && totalMeters / s <= 4) {
-            break;
-        }
+    // Keep the current interval around rounding boundaries to prevent label flicker.
+    if (barPxWidth < 90 || barPxWidth > 220) {
+        totalDistance = getPrettyDistance(maxMeters);
+        barPxWidth = totalDistance / maxMeters * MAX_WIDTH;
     }
 
-    let numSegments = Math.max(2, Math.min(4, Math.round(totalMeters / step)));
-    step = roundToPretty(totalMeters / numSegments);
-    const totalDistance = step * numSegments;
-    const barPxWidth = totalDistance / distPerPx;
-
-    return { numSegments, step, totalDistance, barPxWidth };
+    const numSegments = getNumSegments(totalDistance);
+    return { numSegments, step: totalDistance / numSegments, totalDistance, barPxWidth };
 }
 
 function formatNumber(val: number): string {
-    if (val >= 1000) return `${(val / 1000).toFixed(val % 1000 === 0 ? 0 : 1)}`;
-    return Math.round(val).toString();
+    return Number(val.toPrecision(3)).toString();
+}
+
+function getUnit(totalDistance: number) {
+    if (totalDistance < 0.01) return { multiplier: 1000, suffix: "mm" };
+    if (totalDistance < 1) return { multiplier: 100, suffix: "cm" };
+    if (totalDistance >= 1000) return { multiplier: 0.001, suffix: "km" };
+    return { multiplier: 1, suffix: "m" };
 }
 
 export default function ScaleBar({ map }: { map: Map }) {
     const [numSegments, setNumSegments] = useState(4);
     const [step, setStep] = useState(50);
     const [barWidth, setBarWidth] = useState(200);
+    const totalDistanceRef = useRef<number | null>(null);
 
     useEffect(() => {
+        totalDistanceRef.current = null;
+        let frame: number | null = null;
         const update = () => {
-            const data = getScaleData(map);
-            setNumSegments(data.numSegments);
-            setStep(data.step);
-            setBarWidth(data.barPxWidth);
+            if (frame !== null) return;
+            frame = requestAnimationFrame(() => {
+                const data = getScaleData(map, totalDistanceRef.current);
+                totalDistanceRef.current = data.totalDistance;
+                setNumSegments(data.numSegments);
+                setStep(data.step);
+                setBarWidth(data.barPxWidth);
+                frame = null;
+            });
         };
         map.on("move", update);
         update();
-        return () => { map.off("move", update); };
+        return () => {
+            map.off("move", update);
+            if (frame !== null) cancelAnimationFrame(frame);
+        };
     }, [map]);
 
+    const totalDistance = step * numSegments;
+    const unit = getUnit(totalDistance);
     const labels: string[] = [];
     for (let i = 0; i <= numSegments; i++) {
-        const val = step * i;
+        const val = step * i * unit.multiplier;
         if (i === numSegments) {
-            labels.push(`${formatNumber(val)}${val >= 1000 ? "km" : "m"}`);
+            labels.push(`${formatNumber(val)}${unit.suffix}`);
         } else if (i === 0) {
             labels.push("0");
         } else {

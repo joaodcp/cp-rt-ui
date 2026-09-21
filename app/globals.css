@@ -176,7 +176,6 @@ body {
     z-index: 2;
     border-radius: 4px;
     padding: 6px 8px 2px;
-    transition: width 0.2s ease;
 }
 
 .scale-bar__labels {
